@@ -1,0 +1,39 @@
+# Data & Datasets
+data/
+
+# Model Checkpoints & Large Artifacts
+outputs/
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.onnx
+
+# Environment & Secrets
+.env
+.env.*
+*.pem
+*.key
+*.secret
+
+# Python & Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
