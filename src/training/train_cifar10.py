@@ -53,7 +53,8 @@ def main():
         correct = 0
         total = 0
 
-        for images, labels in train_loader:
+        total_batches = len(train_loader)
+        for batch_idx, (images, labels) in enumerate(train_loader, 1):
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(images)
@@ -65,6 +66,10 @@ def main():
             _, predicted = outputs.max(1)
             total += labels.size(0)
             correct += predicted.eq(labels).sum().item()
+
+            if batch_idx % 200 == 0 or batch_idx == total_batches:
+                current_acc = correct / total
+                print(f"  [Epoch {epoch:02d}] Batch {batch_idx:04d}/{total_batches:04d} - Loss: {loss.item():.4f} - Acc: {current_acc:.4f}")
 
         train_loss = running_loss / total
         train_acc = correct / total
