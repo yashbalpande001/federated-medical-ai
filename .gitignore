@@ -1,8 +1,8 @@
 # Data & Datasets
-data/
+/data/
 
 # Model Checkpoints & Large Artifacts
-outputs/
+/outputs/
 *.pt
 *.pth
 *.bin
