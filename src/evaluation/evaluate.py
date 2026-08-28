@@ -13,13 +13,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.utils.env_config import get_paths
 from src.data.cifar10 import get_dataloaders
 from src.models.simple_cnn import SimpleCNN
 
 
 def main():
-    output_dir = PROJECT_ROOT / "outputs"
-    data_dir = PROJECT_ROOT / "data"
+    paths = get_paths()
+    output_dir = paths["output_root"]
+    data_dir = paths["data_root"]
     checkpoint_path = output_dir / "simple_cnn_best.pt"
 
     if not checkpoint_path.exists():
