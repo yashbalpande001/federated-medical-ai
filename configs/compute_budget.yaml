@@ -1,0 +1,26 @@
+# Compute Budget & Resource Settings for Federated Medical AI
+
+hardware:
+  ram_gb: 8
+  cpu: "Intel i5-1135G7"
+  gpu: "None (Intel Iris Xe local / T4 GPU on Kaggle & Colab)"
+  max_local_batch_size: 32
+
+dataset_split:
+  active_split: "subset"  # Options: "subset" (~6,000 patients) or "full" (~26,684 patients)
+  subset_size: 6000
+  full_size: 26684
+  seed: 42
+
+compute_budget:
+  weekly_gpu_hours: 15
+  environment_overrides:
+    kaggle:
+      active_split: "subset"
+      num_workers: 2
+    colab:
+      active_split: "subset"
+      num_workers: 2
+    local:
+      active_split: "subset"
+      num_workers: 0

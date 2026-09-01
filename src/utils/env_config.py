@@ -49,6 +49,25 @@ def get_paths() -> EnvPaths:
     config_dir = file_project_root / "configs"
     checkpoint_dir = output_dir
 
+    # RSNA dataset path resolution across platforms
+    if env == "kaggle":
+        kaggle_input_rsna = Path("/kaggle/input/rsna-pneumonia-detection-challenge")
+        if kaggle_input_rsna.exists():
+            rsna_raw_dir = kaggle_input_rsna
+        else:
+            rsna_raw_dir = data_dir / "rsna"
+    elif env == "colab":
+        colab_rsna = Path("/content/data/rsna")
+        if colab_rsna.exists():
+            rsna_raw_dir = colab_rsna
+        else:
+            rsna_raw_dir = data_dir / "rsna"
+    else:
+        rsna_raw_dir = data_dir / "rsna"
+
+    rsna_labels_path = rsna_raw_dir / "stage_2_train_labels.csv"
+    rsna_images_dir = rsna_raw_dir / "stage_2_train_images"
+
     # Ensure output and data directories exist
     data_dir.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -61,4 +80,19 @@ def get_paths() -> EnvPaths:
         "output_root": output_dir,
         "checkpoint_root": checkpoint_dir,
         "config_root": config_dir,
+        "rsna_raw_dir": rsna_raw_dir,
+        "rsna_labels_path": rsna_labels_path,
+        "rsna_images_dir": rsna_images_dir,
     })
+
+
+def load_compute_budget() -> dict:
+    """Load compute_budget.yaml configuration."""
+    import yaml
+    paths = get_paths()
+    budget_file = paths.config_root / "compute_budget.yaml"
+    if not budget_file.exists():
+        raise FileNotFoundError(f"Compute budget configuration not found at {budget_file}")
+    with open(budget_file, "r") as f:
+        return yaml.safe_load(f)
+
