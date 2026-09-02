@@ -2,7 +2,11 @@
 /data/
 
 # Model Checkpoints & Large Artifacts
-/outputs/
+/outputs/*
+!/outputs/*.md
+!/outputs/*.json
+!/outputs/*.png
+!/outputs/client_partitions/
 *.pt
 *.pth
 *.bin
