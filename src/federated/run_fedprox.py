@@ -3,7 +3,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -260,12 +260,12 @@ def generate_fedprox_report(
     gap_avg = prox_auc - avg_auc
     gap_cent = prox_auc - c_auc
 
-    content = f"""# Step 11: FedProx (Proximal Regularization) Summary Report
+    content = r"""# Step 11: FedProx (Proximal Regularization) Summary Report
 
 ## Executive Summary
 - **Federated Framework**: Flower (`flwr`) Simulation Engine with Proximal Penalty
 - **Hyperparameter Sweep**: $\mu \in [0.001, 0.01, 0.1]$
-- **Optimal Regularization Strength**: **$\mu = {best_mu}$**
+- **Optimal Regularization Strength**: **$\mu = """ + f"{best_mu}" + r"""$**
 - **Evaluation Dataset**: Centralized Held-Out Step 3 Test Set (**Identical to Step 5, 6, and 10**)
 - **Non-IID Partitioning**: Identical Step 9 Dirichlet partitions ($\alpha=0.5$, 5 Clients, Zero Patient Leakage)
 
@@ -275,12 +275,12 @@ def generate_fedprox_report(
 
 | Milestone / Strategy | Evaluation AUC | F1-Score | Recall | Precision | Status vs FedAvg |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Step 5 Centralized Baseline** | **{c_auc:.4f}** | {centralized_stats.get('f1', 0.0):.4f} | {centralized_stats.get('recall', 0.0):.4f} | {centralized_stats.get('precision', 0.0):.4f} | Upper Bound |
-| **Step 10 Standard FedAvg** | **{avg_auc:.4f}** | {fedavg_stats.get('f1', 0.0):.4f} | {fedavg_stats.get('recall', 0.0):.4f} | {fedavg_stats.get('precision', 0.0):.4f} | Unconstrained Baseline |
-| **Step 11 FedProx ($\mu={best_mu}$)** | **{prox_auc:.4f}** | **{best_fedprox_stats.get('f1', 0.0):.4f}** | **{best_fedprox_stats.get('recall', 0.0):.4f}** | **{best_fedprox_stats.get('precision', 0.0):.4f}** | **{gap_avg:+.4f} Improvement** |
+| **Step 5 Centralized Baseline** | **""" + f"{c_auc:.4f}" + r"""** | """ + f"{centralized_stats.get('f1', 0.0):.4f}" + r""" | """ + f"{centralized_stats.get('recall', 0.0):.4f}" + r""" | """ + f"{centralized_stats.get('precision', 0.0):.4f}" + r""" | Upper Bound |
+| **Step 10 Standard FedAvg** | **""" + f"{avg_auc:.4f}" + r"""** | """ + f"{fedavg_stats.get('f1', 0.0):.4f}" + r""" | """ + f"{fedavg_stats.get('recall', 0.0):.4f}" + r""" | """ + f"{fedavg_stats.get('precision', 0.0):.4f}" + r""" | Unconstrained Baseline |
+| **Step 11 FedProx ($\mu=""" + f"{best_mu}" + r"""$)** | **""" + f"{prox_auc:.4f}" + r"""** | **""" + f"{best_fedprox_stats.get('f1', 0.0):.4f}" + r"""** | **""" + f"{best_fedprox_stats.get('recall', 0.0):.4f}" + r"""** | **""" + f"{best_fedprox_stats.get('precision', 0.0):.4f}" + r"""** | **""" + f"{gap_avg:+.4f}" + r""" Improvement** |
 
-- **FedProx vs. FedAvg AUC Gain**: **{gap_avg:+.4f}**
-- **FedProx vs. Centralized Baseline Gap**: **{gap_cent:+.4f}**
+- **FedProx vs. FedAvg AUC Gain**: **""" + f"{gap_avg:+.4f}" + r"""**
+- **FedProx vs. Centralized Baseline Gap**: **""" + f"{gap_cent:+.4f}" + r"""**
 
 ---
 
@@ -293,14 +293,15 @@ def generate_fedprox_report(
         peak = max([h["auc"] for h in hist], default=0.0)
         final_val = hist[-1]["auc"] if hist else 0.0
         is_best = " (BEST)" if m == best_mu else ""
-        content += f"| $\mu = {m}${is_best} | {peak:.4f} | {final_val:.4f} | {'High' if m >= 0.01 else 'Moderate'} |\n"
+        stab = "High" if m >= 0.01 else "Moderate"
+        content += f"| $\\mu = {m}${is_best} | {peak:.4f} | {final_val:.4f} | {stab} |\n"
 
-    content += f"""
+    content += r"""
 ---
 
 ## 3. Non-IID Stabilization & Research Findings
-1. **Client Drift Mitigation**: The proximal regularization term $\frac{{\mu}}{{2}} \|w - w^t\|^2$ successfully constrained client local optimization. Extreme clients (such as Client 3 with 99.3% normal scans) were prevented from pulling global model weights off course.
-2. **Convergence Smoothness**: Comparing per-round AUC curves in `fedavg_vs_fedprox_plot.png` shows that FedProx ($\mu={best_mu}$) maintains higher stability across rounds compared to standard FedAvg.
+1. **Client Drift Mitigation**: The proximal regularization term $\frac{\mu}{2} \|w - w^t\|^2$ successfully constrained client local optimization. Extreme clients (such as Client 3 with 99.3% normal scans) were prevented from pulling global model weights off course.
+2. **Convergence Smoothness**: Comparing per-round AUC curves in `fedavg_vs_fedprox_plot.png` shows that FedProx ($\mu=""" + f"{best_mu}" + r"""$) maintains higher stability across rounds compared to standard FedAvg.
 3. **Closing the Centralized Gap**: Adding proximal regularization narrowed the performance gap between distributed non-IID training and the centralized baseline.
 
 ---
