@@ -137,6 +137,15 @@ def run_fedprox_sweep(
         all_histories[mu] = hist
         best_records[mu] = best_rec
 
+        # Shutdown Ray between sweep iterations to release actors and GPU memory
+        try:
+            import ray
+
+            if ray.is_initialized():
+                ray.shutdown()
+        except Exception:
+            pass
+
     # Select best mu overall based on final/peak test AUC
     best_mu = max(best_records.keys(), key=lambda m: best_records[m].get("auc", 0.0))
     best_fedprox_stats = best_records[best_mu]
