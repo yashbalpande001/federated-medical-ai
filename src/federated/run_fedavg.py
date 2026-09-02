@@ -204,13 +204,15 @@ def generate_fedavg_report(
     gap = fedavg_auc - baseline_auc
     gap_pct = (gap / baseline_auc) * 100 if baseline_auc > 0 else 0.0
 
-    content = r"""# Step 10: Real RSNA Federated Learning (FedAvg) Summary Report
+    content = f"""# Step 10: Real RSNA Federated Learning (FedAvg) Summary Report
 
 ## Executive Summary
-- **Federated Architecture**: 5 Virtual Hospital Clients (Non-IID $\alpha=0.5$ Dirichlet Partitions)
-- **Local Model**: ResNet-18 with Binary Focal Loss ($\gamma=2.0, \alpha=0.75$)
+- **Federated Architecture**: 5 Virtual Hospital Clients (Non-IID $\\alpha=0.5$ Dirichlet Partitions)
+- **Local Model**: ResNet-18 with Binary Focal Loss ($\gamm\\a=2.0, \\alpha=0.75$)
 - **Aggregation Strategy**: Federated Averaging (`FedAvg`)
-- **Communication Rounds**: **""" + f"{num_rounds}**\n- **Evaluation Dataset**: Centralized Held-Out Step 3 Test Set (**Same dataset as Step 5/6**)\n" + r"""
+- **Communication Rounds**: **{num_rounds}**
+- **Evaluation Dataset**: Centralized Held-Out Step 3 Test Set (**Same dataset as Step 5/6**)
+
 ---
 
 ## 1. Metrics Comparison Across Milestones
