@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # -------------------------------------------------------------
+  # 1. Centralized Flower FedProx Server Service
+  # -------------------------------------------------------------
+  fl-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: rsna-fl-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+    networks:
+      - fl-net
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["python", "src/federated/run_fedprox.py", "--clients", "5", "--rounds", "10", "--epochs", "1", "--mu", "0.01"]
+
+  # -------------------------------------------------------------
+  # 2. Virtual Hospital Client 0 Service
+  # -------------------------------------------------------------
+  fl-client-0:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: rsna-fl-client-0
+    depends_on:
+      - fl-server
+    volumes:
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+    networks:
+      - fl-net
+    environment:
+      - CLIENT_ID=0
+      - SERVER_ADDRESS=fl-server:8080
+
+  # -------------------------------------------------------------
+  # 3. Virtual Hospital Client 1 Service
+  # -------------------------------------------------------------
+  fl-client-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: rsna-fl-client-1
+    depends_on:
+      - fl-server
+    volumes:
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+    networks:
+      - fl-net
+    environment:
+      - CLIENT_ID=1
+      - SERVER_ADDRESS=fl-server:8080
+
+  # -------------------------------------------------------------
+  # 4. Virtual Hospital Client 2 Service
+  # -------------------------------------------------------------
+  fl-client-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: rsna-fl-client-2
+    depends_on:
+      - fl-server
+    volumes:
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+    networks:
+      - fl-net
+    environment:
+      - CLIENT_ID=2
+      - SERVER_ADDRESS=fl-server:8080
+
+  # -------------------------------------------------------------
+  # 5. Virtual Hospital Client 3 Service
+  # -------------------------------------------------------------
+  fl-client-3:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: rsna-fl-client-3
+    depends_on:
+      - fl-server
+    volumes:
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+    networks:
+      - fl-net
+    environment:
+      - CLIENT_ID=3
+      - SERVER_ADDRESS=fl-server:8080
+
+  # -------------------------------------------------------------
+  # 6. Virtual Hospital Client 4 Service
+  # -------------------------------------------------------------
+  fl-client-4:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: rsna-fl-client-4
+    depends_on:
+      - fl-server
+    volumes:
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+    networks:
+      - fl-net
+    environment:
+      - CLIENT_ID=4
+      - SERVER_ADDRESS=fl-server:8080
+
+networks:
+  fl-net:
+    driver: bridge

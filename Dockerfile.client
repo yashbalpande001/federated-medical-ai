@@ -1,0 +1,26 @@
+# Use lightweight Python 3.10 slim base image
+FROM python:3.10-slim
+
+# Prevent Python from writing .pyc files & buffer stdout/stderr
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install system dependencies required for image processing
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install CPU PyTorch & Flower
+COPY requirements.txt .
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+
+# Copy application source code
+COPY src/ ./src/
+COPY configs/ ./configs/
+
+# Default command to start a client (can be overridden by docker-compose)
+CMD ["python", "-c", "print('RSNA Flower Client Container Ready')"]
