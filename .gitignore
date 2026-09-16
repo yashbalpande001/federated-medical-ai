@@ -1,24 +1,19 @@
-# Data & Datasets
-/data/
-
-# Model Checkpoints & Large Artifacts
-/outputs/*
-!/outputs/*.md
-!/outputs/*.json
-!/outputs/*.png
-!/outputs/client_partitions/
-*.pt
-*.pth
-*.bin
-*.ckpt
-*.onnx
-
 # Environment & Secrets
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 *.secret
+
+# Weights & Datasets
+data/*.pt
+data/*.dcm
+weights/*.pt
+outputs/*.pt
+outputs/*.png
+outputs/*.json
+*.zip
 
 # Python & Cache
 __pycache__/
@@ -39,5 +34,3 @@ env/
 .vscode/
 .idea/
 .DS_Store
-Thumbs.db
-
