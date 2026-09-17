@@ -33,6 +33,7 @@ class SaveAndEvaluateFedProx(FedAvg):
         checkpoints_dir: Path,
         mu: float = 0.01,
         device: Optional[torch.device] = None,
+        model_name: str = "resnet18",
         *args,
         **kwargs,
     ):
@@ -42,7 +43,14 @@ class SaveAndEvaluateFedProx(FedAvg):
         self.checkpoints_dir.mkdir(parents=True, exist_ok=True)
         self.mu = mu
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.eval_model = RSNABaselineResNet18(pretrained=False, freeze_backbone=False).to(self.device)
+        self.model_name = model_name
+
+        if self.model_name.lower() in ["mobilenet", "mobilenet_v3", "mobilenetv3"]:
+            from src.models.mobilenet import RSNAMobileNetV3Small
+            self.eval_model = RSNAMobileNetV3Small(pretrained=False, freeze_backbone=False).to(self.device)
+        else:
+            self.eval_model = RSNABaselineResNet18(pretrained=False, freeze_backbone=False).to(self.device)
+
         self.criterion = BinaryFocalLoss(gamma=2.0, alpha=0.75)
         self.eval_history: List[Dict[str, float]] = []
 
