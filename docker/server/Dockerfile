@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir torch torchvision --index-url https://download.py
     && pip install --no-cache-dir -r requirements.txt
 
 COPY server_aggregator.py /app/server_aggregator.py
+COPY static/ /app/static/
 
 EXPOSE 8080
 

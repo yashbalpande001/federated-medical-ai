@@ -8,6 +8,7 @@ import hashlib
 from pathlib import Path
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 import torch
 import torch.nn as nn
@@ -53,12 +54,55 @@ def build_resnet18():
 
 @app.get("/health")
 def health_check():
+    submissions_list = []
+    for sub in received_submissions.values():
+        cid = sub["client_id"]
+        try:
+            cid_int = int(str(cid).replace("client_", "").replace("client", ""))
+        except ValueError:
+            cid_int = cid
+
+        meta = sub.get("metadata", {})
+        partition = meta.get("partition_idx", meta.get("partition", sub.get("partition", 0)))
+
+        pos_val = sub.get("positive_rate", meta.get("positive_percentage", 0.0))
+        if float(pos_val) > 1.0:
+            pos_rate = float(pos_val) / 100.0
+        else:
+            pos_rate = float(pos_val)
+
+        submissions_list.append({
+            "client_id": cid_int,
+            "source_ip": sub["source_ip"],
+            "partition": int(partition),
+            "n_samples": int(sub["n_samples"]),
+            "positive_rate": round(pos_rate, 3),
+            "bytes": int(sub["byte_count"]),
+            "sha256": sub["sha256"]
+        })
+
     return {
         "status": "online",
         "expected_clients": EXPECTED_CLIENTS,
-        "received_count": len(received_submissions),
-        "clients_received": list(received_submissions.keys())
+        "submissions_received": len(received_submissions),
+        "submissions": submissions_list
     }
+
+@app.get("/results")
+def get_results():
+    results_path = OUTPUT_DIR / "round1_results.json"
+    if not results_path.exists():
+        results_path_alt = Path("outputs/round1_results.json")
+        if results_path_alt.exists():
+            results_path = results_path_alt
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="round1_results.json not found. No aggregation has been performed yet."
+            )
+    with open(results_path, "r") as f:
+        data = json.load(f)
+    return data
 
 @app.post("/submit")
 async def submit_weights(
@@ -128,6 +172,12 @@ async def submit_weights(
 
         results_payload = {
             "rounds_executed": 1,
+            "auc": metrics["auc"],
+            "recall": metrics["recall"],
+            "precision": metrics["precision"],
+            "specificity": metrics["specificity"],
+            "confusion_matrix": metrics["confusion_matrix"],
+            "f1": metrics["f1"],
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "clients": [
                 {
@@ -156,6 +206,12 @@ async def submit_weights(
             "message": "Real FedAvg aggregation completed successfully across 2 real client compute origins.",
             "metrics": metrics
         }
+
+# Register StaticFiles catch-all mount AFTER all API routes
+static_path = "static" if os.path.exists("static") else str(PROJECT_ROOT / "static")
+if not os.path.exists(static_path):
+    os.makedirs(static_path, exist_ok=True)
+app.mount("/", StaticFiles(directory=static_path, html=True), name="ui")
 
 def run_weighted_fedavg(submissions):
     clients = list(submissions.values())
