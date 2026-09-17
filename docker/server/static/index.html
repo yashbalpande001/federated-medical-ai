@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Federated Aggregation Console — RSNA Pneumonia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E9ECF0; --panel:#FFFFFF; --ink:#1B2430; --muted:#5C6B7A;
+    --line:#C8D0D9; --line-soft:#E1E6EB;
+    --signal:#0B6E7F; --signal-tint:#E2F0F2;
+    --live:#1A7F5A; --pending:#B26A00; --pending-tint:#FBF0DF; --alert:#A32F2F;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper); color:var(--ink); font-family:var(--sans);
+    font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 20px 72px}
+
+  /* ---------- masthead ---------- */
+  .mast{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between; padding-bottom:16px; border-bottom:2px solid var(--ink)}
+  .mast h1{font-size:23px; font-weight:600; letter-spacing:-.01em; margin:0}
+  .mast p{margin:4px 0 0; color:var(--muted); font-size:13.5px}
+  .conn{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:12.5px; color:var(--muted)}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--muted); flex:none}
+  .dot.on{background:var(--live); box-shadow:0 0 0 3px rgba(26,127,90,.18)}
+  .dot.off{background:var(--alert); box-shadow:0 0 0 3px rgba(163,47,47,.15)}
+
+  /* ---------- topology hero ---------- */
+  .stage{background:var(--panel); border:1px solid var(--line); margin-top:22px; padding:22px 20px 16px}
+  .stage h2{margin:0 0 2px; font-size:16px; font-weight:600}
+  .stage .sub{margin:0 0 16px; color:var(--muted); font-size:13.5px}
+  svg.topo{width:100%; height:auto; display:block}
+  .node-box{fill:#fff; stroke:var(--line); stroke-width:1.5}
+  .node-box.armed{stroke:var(--live); stroke-width:2.5}
+  .node-box.srv{fill:var(--signal-tint); stroke:var(--signal); stroke-width:2}
+  .node-t{font-family:var(--sans); font-size:13px; font-weight:600; fill:var(--ink)}
+  .node-s{font-family:var(--mono); font-size:10.5px; fill:var(--muted)}
+  .node-s.ok{fill:var(--live)}
+  .wire{stroke:var(--line); stroke-width:2; fill:none}
+  .wire.hot{stroke:var(--live); stroke-width:2.5}
+  .pulse{stroke:var(--live); stroke-width:2.5; fill:none; stroke-dasharray:7 12; animation:flow 1.1s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-38}}
+  @media (prefers-reduced-motion:reduce){.pulse{animation:none; stroke-dasharray:none; opacity:.55}}
+
+  /* ---------- panels ---------- */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel); border:1px solid var(--line); padding:18px 18px 16px}
+  .panel h3{margin:0 0 12px; font-size:15px; font-weight:600}
+  .panel.wide{grid-column:1/-1}
+
+  .empty{border:1px dashed var(--line); padding:26px 18px; text-align:center; color:var(--muted)}
+  .empty strong{display:block; color:var(--ink); font-weight:600; margin-bottom:5px}
+
+  /* ---------- honesty banner ---------- */
+  .caveat{background:var(--pending-tint); border-left:3px solid var(--pending); padding:11px 14px; font-size:13px; color:#6B4400; margin-bottom:14px}
+  .caveat b{font-weight:600}
+
+  /* ---------- metrics ---------- */
+  .mrow{display:flex; flex-wrap:wrap; gap:26px; margin-bottom:16px}
+  .m .k{font-family:var(--mono); font-size:27px; font-weight:500; letter-spacing:-.02em}
+  .m .l{font-size:12.5px; color:var(--muted)}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px}
+  th,td{text-align:left; padding:7px 10px 7px 0; border-bottom:1px solid var(--line-soft)}
+  th{font-weight:600; color:var(--muted); font-size:12.5px}
+  td.num,th.num{text-align:right; font-family:var(--mono); padding-right:0}
+  tr.here td{background:var(--signal-tint)}
+  .flag{font-size:12px; color:var(--pending); font-family:var(--mono)}
+
+  /* confusion matrix */
+  .cm{display:grid; grid-template-columns:auto 1fr 1fr; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); font-family:var(--mono); font-size:13px; max-width:330px}
+  .cm>div{background:#fff; padding:9px 11px}
+  .cm .hd{background:#F4F6F8; color:var(--muted); font-size:11.5px; font-family:var(--sans)}
+  .cm .hit{background:var(--signal-tint)}
+
+  /* recall bars */
+  .bar{margin-bottom:11px}
+  .bar .top{display:flex; justify-content:space-between; font-size:13px; margin-bottom:3px}
+  .bar .top span:last-child{font-family:var(--mono)}
+  .track{height:9px; background:var(--line-soft)}
+  .fill{height:100%; background:var(--muted)}
+  .fill.base{background:var(--ink)}
+  .fill.now{background:var(--signal)}
+
+  /* provenance */
+  .prov{font-family:var(--mono); font-size:12.5px}
+  .prov div{padding:7px 0; border-bottom:1px solid var(--line-soft); display:flex; justify-content:space-between; gap:14px}
+  .prov .lbl{font-family:var(--sans); color:var(--muted)}
+  .hash{word-break:break-all; text-align:right}
+  .verdict{margin-top:12px; padding:10px 13px; font-size:13px; border-left:3px solid var(--live); background:#EAF5F0; color:#155C42}
+  .verdict.bad{border-color:var(--alert); background:#FAEDED; color:#7E2424}
+
+  footer{margin-top:26px; color:var(--muted); font-size:12.5px}
+  button{font:inherit; font-size:13px; padding:7px 14px; background:var(--ink); color:#fff; border:0; cursor:pointer}
+  button:hover{background:#2C3A4A}
+  :focus-visible{outline:2px solid var(--signal); outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div>
+      <h1>Federated aggregation console</h1>
+      <p>Chest X-ray pneumonia detection · RSNA · ResNet-18 · weighted FedAvg</p>
+    </div>
+    <div class="conn"><span class="dot" id="dot"></span><span id="connText">connecting…</span></div>
+  </header>
+
+  <!-- HERO: topology -->
+  <section class="stage">
+    <h2>Compute origins</h2>
+    <p class="sub">Two independent machines fine-tune on Kaggle GPU, then transmit weight tensors only. No patient images cross the network.</p>
+    <svg class="topo" viewBox="0 0 860 210" role="img" aria-labelledby="topoTitle">
+      <title id="topoTitle">Two client nodes transmitting weights to the aggregation server</title>
+      <g id="wire1"><path class="wire" d="M232 52 H420 Q446 52 446 78 V96"/></g>
+      <g id="wire2"><path class="wire" d="M232 158 H420 Q446 158 446 132 V114"/></g>
+
+      <g>
+        <rect class="node-box" id="box1" x="16" y="22" width="216" height="60" rx="2"/>
+        <text class="node-t" x="32" y="46">Client 1 · Ryzen 7 / RTX 4050</text>
+        <text class="node-s" x="32" y="64" id="c1s">partition 0 · awaiting submission</text>
+      </g>
+      <g>
+        <rect class="node-box" id="box2" x="16" y="128" width="216" height="60" rx="2"/>
+        <text class="node-t" x="32" y="152">Client 2 · Intel i5 / CPU</text>
+        <text class="node-s" x="32" y="170" id="c2s">partition 3 · awaiting submission</text>
+      </g>
+      <g>
+        <rect class="node-box srv" x="446" y="70" width="240" height="70" rx="2"/>
+        <text class="node-t" x="466" y="96">Aggregation server</text>
+        <text class="node-s" x="466" y="114" id="srvs">0 / 2 received</text>
+        <text class="node-s" x="466" y="130">weighted FedAvg · eval on 900 held-out</text>
+      </g>
+      <path class="wire" d="M686 105 H760"/>
+      <g>
+        <rect class="node-box" x="760" y="78" width="84" height="54" rx="2"/>
+        <text class="node-t" x="776" y="101">Global</text>
+        <text class="node-t" x="776" y="119">model</text>
+      </g>
+    </svg>
+  </section>
+
+  <div class="grid">
+
+    <!-- ROUND RESULT -->
+    <section class="panel wide" id="resultPanel">
+      <h3>Round 1 result</h3>
+      <div class="empty" id="resultEmpty">
+        <strong>No aggregation has run yet.</strong>
+        Start the server, then run both client transfer containers. Results appear here the moment the second submission lands.
+      </div>
+      <div id="resultBody" hidden>
+        <div class="caveat">
+          <b>Read this number carefully.</b> One real aggregation round, not a convergence run.
+          Clients hold Dirichlet partitions 0 and 3, both positive-rich relative to the 23.5% base rate —
+          so recall here is <b>not</b> comparable to the 5-client Step 10/11 benchmarks and is not evidence
+          that federation improved accuracy. This validates transport and aggregation mechanics.
+        </div>
+        <div class="mrow">
+          <div class="m"><div class="k" id="mAuc">—</div><div class="l">ROC-AUC</div></div>
+          <div class="m"><div class="k" id="mRec">—</div><div class="l">Recall</div></div>
+          <div class="m"><div class="k" id="mPre">—</div><div class="l">Precision</div></div>
+          <div class="m"><div class="k" id="mSpe">—</div><div class="l">Specificity</div></div>
+          <div class="m"><div class="k" id="mRounds">—</div><div class="l">Rounds executed</div></div>
+        </div>
+        <div class="cm" id="cm">
+          <div class="hd"></div><div class="hd">Pred normal</div><div class="hd">Pred pneumonia</div>
+          <div class="hd">True normal</div><div id="cmTN">—</div><div id="cmFP">—</div>
+          <div class="hd">True pneumonia</div><div id="cmFN">—</div><div class="hit" id="cmTP">—</div>
+        </div>
+        <div class="verdict" id="arith">Checking arithmetic…</div>
+      </div>
+    </section>
+
+    <!-- BENCHMARKS -->
+    <section class="panel">
+      <h3>Recall against verified benchmarks</h3>
+      <div class="bar">
+        <div class="top"><span>Centralized baseline (Step 5)</span><span>0.8173</span></div>
+        <div class="track"><div class="fill base" style="width:81.7%"></div></div>
+      </div>
+      <div class="bar">
+        <div class="top"><span>FedProx μ=0.1, 5 clients (Step 11)</span><span>0.2067</span></div>
+        <div class="track"><div class="fill" style="width:20.7%"></div></div>
+      </div>
+      <div class="bar">
+        <div class="top"><span>FedAvg, 5 clients (Step 10)</span><span>0.0865</span></div>
+        <div class="track"><div class="fill" style="width:8.7%"></div></div>
+      </div>
+      <div class="bar" id="liveBar" hidden>
+        <div class="top"><span>This round, 2 clients</span><span id="liveRecTxt">—</span></div>
+        <div class="track"><div class="fill now" id="liveRecFill" style="width:0%"></div></div>
+      </div>
+      <p style="color:var(--muted); font-size:12.5px; margin:14px 0 0">
+        Centralized recall is the ceiling. The gap below it is the cost of extreme non-IID partitioning —
+        two of five clients held fewer than three positive training examples.
+      </p>
+    </section>
+
+    <!-- PROVENANCE -->
+    <section class="panel">
+      <h3>Transmission provenance</h3>
+      <div class="empty" id="provEmpty"><strong>Nothing received.</strong> Source addresses and weight hashes are recorded as each client submits.</div>
+      <div class="prov" id="provBody" hidden></div>
+      <div class="verdict" id="provVerdict" hidden></div>
+    </section>
+
+    <!-- BENCHMARK TABLE -->
+    <section class="panel wide">
+      <h3>Verified results ledger</h3>
+      <table>
+        <thead><tr><th>Experiment</th><th>Topology</th><th class="num">AUC</th><th class="num">Recall</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Step 5 centralized baseline</td><td>Single GPU</td><td class="num">0.8536</td><td class="num">0.8173</td><td>Verified</td></tr>
+          <tr><td>Step 10 FedAvg</td><td>5 clients, Dirichlet 0.5</td><td class="num">0.8291</td><td class="num">0.0865</td><td>Verified</td></tr>
+          <tr><td>Step 11 FedProx μ=0.1</td><td>5 clients, Dirichlet 0.5</td><td class="num">0.8249</td><td class="num">0.2067</td><td>Verified</td></tr>
+          <tr class="here" id="ledgerLive"><td>Live multi-machine round</td><td>2 clients, Docker + Tailscale</td><td class="num" id="ledAuc">—</td><td class="num" id="ledRec">—</td><td class="flag" id="ledStatus">Pending</td></tr>
+        </tbody>
+      </table>
+      <p style="color:var(--muted); font-size:12.5px; margin:12px 0 0">
+        Only end-to-end runs with logged training curves appear here. Step 5 precision is 0.4843 on confusion matrix [[511,181],[38,170]].
+      </p>
+    </section>
+  </div>
+
+  <footer>
+    Polling <span class="prov" id="base"></span> · <button id="refresh">Refresh now</button>
+  </footer>
+</div>
+
+<script>
+const API = window.location.origin;
+document.getElementById('base').textContent = API;
+const $ = id => document.getElementById(id);
+
+function setConn(ok, text){
+  const d = $('dot');
+  d.className = 'dot ' + (ok ? 'on' : 'off');
+  $('connText').textContent = text;
+}
+
+function armClient(n, meta){
+  $('box'+n).classList.add('armed');
+  const s = $('c'+n+'s');
+  s.classList.add('ok');
+  s.textContent = 'partition ' + meta.partition + ' · ' + meta.n_samples + ' samples · received';
+  const wire = $('wire'+n);
+  wire.querySelector('path').setAttribute('class','wire hot');
+  if(!wire.querySelector('.pulse')){
+    const p = wire.querySelector('path').cloneNode();
+    p.setAttribute('class','pulse');
+    wire.appendChild(p);
+  }
+}
+
+function renderProv(subs){
+  if(!subs.length) return;
+  $('provEmpty').hidden = true;
+  const b = $('provBody'); b.hidden = false; b.innerHTML = '';
+  subs.forEach(s => {
+    b.insertAdjacentHTML('beforeend',
+      `<div><span class="lbl">Client ${s.client_id} source</span><span>${s.source_ip}</span></div>
+       <div><span class="lbl">Client ${s.client_id} partition</span><span>idx ${s.partition} · n=${s.n_samples} · ${(s.positive_rate*100).toFixed(1)}% pos</span></div>
+       <div><span class="lbl">Client ${s.client_id} payload</span><span>${(s.bytes/1048576).toFixed(2)} MB</span></div>
+       <div><span class="lbl">Client ${s.client_id} SHA-256</span><span class="hash">${s.sha256.slice(0,32)}…</span></div>`);
+  });
+  if(subs.length === 2){
+    const v = $('provVerdict'); v.hidden = false;
+    const sameHash = subs[0].sha256 === subs[1].sha256;
+    const sameIp   = subs[0].source_ip === subs[1].source_ip;
+    if(sameHash){
+      v.className = 'verdict bad';
+      v.textContent = 'Both clients sent byte-identical weights. This is not a federation — the same model was averaged with itself. Do not report this result.';
+    } else if(sameIp){
+      v.className = 'verdict bad';
+      v.textContent = 'Both submissions came from one address. Weights differ, but this did not demonstrate two compute origins.';
+    } else {
+      v.className = 'verdict';
+      v.textContent = 'Two distinct source addresses, two distinct weight hashes. Genuine multi-origin aggregation.';
+    }
+  }
+}
+
+function checkArithmetic(r){
+  const [[tn,fp],[fn,tp]] = r.confusion_matrix;
+  const total = tn+fp+fn+tp, pos = fn+tp;
+  const recall = tp/(tp+fn), prec = tp/(tp+fp), spec = tn/(tn+fp);
+  const bad = [];
+  if(total !== 900) bad.push(`matrix sums to ${total}, expected 900`);
+  if(pos !== 208) bad.push(`${pos} positives, expected 208`);
+  if(Math.abs(recall - r.recall) > 0.002) bad.push(`recall ${r.recall} vs matrix ${recall.toFixed(4)}`);
+  if(Math.abs(prec - r.precision) > 0.002) bad.push(`precision ${r.precision} vs matrix ${prec.toFixed(4)}`);
+  if(Math.abs(spec - r.specificity) > 0.002) bad.push(`specificity ${r.specificity} vs matrix ${spec.toFixed(4)}`);
+  if(r.auc > 0.8536) bad.push(`AUC ${r.auc} exceeds the centralized ceiling — suspect test leakage`);
+  const el = $('arith');
+  if(bad.length){
+    el.className = 'verdict bad';
+    el.textContent = 'Consistency check failed: ' + bad.join('; ') + '. Do not cite this result.';
+  } else {
+    el.className = 'verdict';
+    el.textContent = 'Consistency check passed: matrix sums to 900 with 208 positives, and every reported metric is reproducible from it.';
+  }
+}
+
+function renderResult(r){
+  $('resultEmpty').hidden = true;
+  $('resultBody').hidden = false;
+  $('mAuc').textContent = r.auc.toFixed(4);
+  $('mRec').textContent = r.recall.toFixed(4);
+  $('mPre').textContent = r.precision.toFixed(4);
+  $('mSpe').textContent = r.specificity.toFixed(4);
+  $('mRounds').textContent = r.rounds_executed;
+  const [[tn,fp],[fn,tp]] = r.confusion_matrix;
+  $('cmTN').textContent = tn; $('cmFP').textContent = fp;
+  $('cmFN').textContent = fn; $('cmTP').textContent = tp;
+  checkArithmetic(r);
+  $('liveBar').hidden = false;
+  $('liveRecTxt').textContent = r.recall.toFixed(4);
+  $('liveRecFill').style.width = (r.recall*100).toFixed(1) + '%';
+  $('ledAuc').textContent = r.auc.toFixed(4);
+  $('ledRec').textContent = r.recall.toFixed(4);
+  $('ledStatus').textContent = r.rounds_executed + ' round, partitions 0 & 3';
+}
+
+async function poll(){
+  try{
+    const h = await fetch(API + '/health', {cache:'no-store'});
+    if(!h.ok) throw new Error(h.status);
+    const d = await h.json();
+    setConn(true, 'server online · ' + d.submissions_received + '/' + d.expected_clients);
+    $('srvs').textContent = d.submissions_received + ' / ' + d.expected_clients + ' received';
+    (d.submissions || []).forEach(s => armClient(s.client_id, s));
+    renderProv(d.submissions || []);
+  }catch(e){
+    setConn(false, 'server unreachable');
+    return;
+  }
+  try{
+    const r = await fetch(API + '/results', {cache:'no-store'});
+    if(r.ok) renderResult(await r.json());
+  }catch(e){ /* results not ready yet — expected */ }
+}
+
+$('refresh').addEventListener('click', poll);
+poll();
+setInterval(poll, 3000);
+</script>
+</body>
+</html>
