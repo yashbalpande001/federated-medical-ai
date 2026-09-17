@@ -39,6 +39,7 @@ class RSNAFedProxClient(NumPyClient):
         epochs_per_round: int = 1,
         device: Optional[torch.device] = None,
         is_synthetic: bool = False,
+        model_name: str = "resnet18",
     ):
         self.client_id = client_id
         self.partition_csv = Path(partition_csv)
@@ -49,6 +50,7 @@ class RSNAFedProxClient(NumPyClient):
         self.epochs_per_round = epochs_per_round
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.is_synthetic = is_synthetic
+        self.model_name = model_name
 
         # Load client dataset partition (reused from Step 9)
         if self.partition_csv.exists():
@@ -67,8 +69,13 @@ class RSNAFedProxClient(NumPyClient):
             self.dataset, batch_size=self.batch_size, shuffle=True, num_workers=0
         )
 
-        # Model & Loss (Step 6 Focal Loss)
-        self.model = RSNABaselineResNet18(pretrained=True, freeze_backbone=False).to(self.device)
+        # Model Initialization (ResNet-18 vs MobileNetV3-Small)
+        if self.model_name.lower() in ["mobilenet", "mobilenet_v3", "mobilenetv3"]:
+            from src.models.mobilenet import RSNAMobileNetV3Small
+            self.model = RSNAMobileNetV3Small(pretrained=True, freeze_backbone=False).to(self.device)
+        else:
+            self.model = RSNABaselineResNet18(pretrained=True, freeze_backbone=False).to(self.device)
+
         self.criterion = BinaryFocalLoss(gamma=2.0, alpha=0.75)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=1e-4)
 
