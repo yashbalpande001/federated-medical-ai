@@ -5,14 +5,19 @@
 *.pem
 *.key
 *.secret
+kaggle.json
+*.json.secret
 
 # Weights & Datasets
-data/*.pt
-data/*.dcm
-weights/*.pt
-outputs/*.pt
-outputs/*.png
-outputs/*.json
+*.pt
+*.pth
+*.ckpt
+*.dcm
+data/
+weights/*
+!weights/.gitkeep
+outputs/*
+!outputs/.gitkeep
 *.zip
 
 # Python & Cache
