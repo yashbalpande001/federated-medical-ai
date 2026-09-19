@@ -83,3 +83,32 @@ federated-medical-ai/
 
 - **Server Owner Setup**: Refer to [`docs/SERVER_SETUP.md`](docs/SERVER_SETUP.md) for server aggregator launch steps.
 - **Teammate / Client Setup**: Refer to [`docs/TEAMMATE_SETUP.md`](docs/TEAMMATE_SETUP.md) for lightweight client weight submission steps.
+
+---
+
+## 🩺 Clinical Demonstration Service & Doctor UI (Port 8090)
+
+A standalone single-image inference service and zero-build web interface for interactive pneumonia screening:
+
+- **Service Module**: [`app/inference_server.py`](app/inference_server.py) (Running on Port `8090`, isolated from the Port `8080` FL Aggregator).
+- **Web Interface**: Single-page Doctor UI accessible at `http://localhost:8090/` (located at [`app/static/doctor_ui.html`](app/static/doctor_ui.html)). Supports `.dcm` (DICOM), `.png`, `.jpg`, and `.jpeg`.
+- **Launch Command**:
+  ```bash
+  python app/inference_server.py
+  # Or via Uvicorn:
+  uvicorn app.inference_server:app --host 0.0.0.0 --port 8090
+  ```
+
+### Active Model Checkpoint & Rationale
+- **Default Checkpoint**: Step 5 Centralized Baseline (`best_baseline_model.pt` / `best_model.pt`, verified Test ROC-AUC: **0.8536**).
+- **Explicit Checkpoint Policy**: We intentionally **do not** default to the Step 12b federated aggregated model. The Step 12b model has only completed a single round of training across two positive-skewed partitions (57.0% and 29.8% positive rate) and its out-of-distribution generalization has not yet been verified on the test set. The Step 5 baseline represents our empirical, verified performance standard.
+- **Fail-Loud Startup Validation**: Configured via the `MODEL_CHECKPOINT_PATH` environment variable. If the specified checkpoint file is missing, the server **fails loudly on startup** and terminates immediately to prevent operating with random weights.
+
+### Known Limitations & Regulatory Status
+> [!CAUTION]
+> **TECHNOLOGY DEMONSTRATION ONLY — NOT A CLINICAL TOOL**
+> - **Regulatory Notice**: This software is an investigational research prototype. It is **not** an FDA-cleared, CE-marked, or CDSCO-approved medical device and must **never** be used for direct patient diagnostic or clinical decision-making.
+> - **Recall Ceiling**: Even the best verified model (Step 5 baseline) exhibits an empirical test recall ceiling of ~81.7%, meaning approximately 18% of positive pneumonia cases can be missed under a 0.5 decision threshold.
+> - **Federated Model Generalization**: The generalization capability of the live FL-aggregated model remains unknown until multi-round live trials are conducted and verified against the held-out test set.
+> - **Data Privacy**: Uploaded patient image bytes are preprocessed strictly in memory and are **never** persisted to disk. Each prediction is recorded with a timestamp, filename, and score payload in `outputs/inference_log.jsonl` for audit compliance.
+
