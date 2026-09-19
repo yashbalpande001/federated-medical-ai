@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Federated Medical AI — Clinical Screening Portal</title>
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #131b2e;
+            --bg-card: rgba(23, 32, 54, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(99, 102, 241, 0.5);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-indigo: #6366f1;
+            --status-danger: #ef4444;
+            --status-danger-bg: rgba(239, 68, 68, 0.15);
+            --status-success: #10b981;
+            --status-success-bg: rgba(16, 185, 129, 0.15);
+            --disclaimer-bg: #451a03;
+            --disclaimer-border: #f59e0b;
+            --disclaimer-text: #fef3c7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 0%, #172554 0%, var(--bg-primary) 65%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 860px;
+            width: 100%;
+        }
+
+        /* Permanent Regulatory Disclaimer Header */
+        .disclaimer-banner {
+            background-color: var(--disclaimer-bg);
+            border: 1px solid var(--disclaimer-border);
+            color: var(--disclaimer-text);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15);
+        }
+
+        .disclaimer-banner svg {
+            flex-shrink: 0;
+            width: 26px;
+            height: 26px;
+            fill: #f59e0b;
+        }
+
+        .disclaimer-banner .disclaimer-text {
+            font-size: 0.92rem;
+            line-height: 1.45;
+            font-weight: 500;
+        }
+
+        .disclaimer-banner strong {
+            color: #fbbf24;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2.1rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.4rem;
+            background: linear-gradient(135deg, #ffffff 40%, #93c5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(16px);
+            border-radius: 14px;
+            padding: 2rem;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Upload Zone */
+        .dropzone {
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            background: rgba(11, 15, 25, 0.5);
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-indigo);
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .dropzone svg {
+            width: 48px;
+            height: 48px;
+            fill: var(--text-dim);
+            margin-bottom: 0.8rem;
+            transition: fill 0.2s;
+        }
+
+        .dropzone:hover svg {
+            fill: var(--accent-blue);
+        }
+
+        .dropzone p.main-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.35rem;
+        }
+
+        .dropzone p.sub-text {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .file-info-box {
+            display: none;
+            margin-top: 1.25rem;
+            padding: 0.9rem 1.2rem;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-info-box.active {
+            display: flex;
+        }
+
+        .file-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .file-size {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+        }
+
+        .btn-submit {
+            display: block;
+            width: 100%;
+            margin-top: 1.5rem;
+            padding: 0.95rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            opacity: 0.95;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Results Panel */
+        #results-panel {
+            display: none;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .result-header h2 {
+            font-size: 1.35rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 1.1rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .status-badge.suspected {
+            background: var(--status-danger-bg);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .status-badge.normal {
+            background: var(--status-success-bg);
+            color: #86efac;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 1.25rem;
+            border-radius: 10px;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .metric-value {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        /* Progress Bar */
+        .progress-track {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 0.6rem;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 6px;
+        }
+
+        .fill-danger {
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+        }
+
+        .fill-success {
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+        }
+
+        .checkpoint-card {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.88rem;
+            margin-top: 1rem;
+        }
+
+        .checkpoint-label {
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        .checkpoint-value {
+            color: #93c5fd;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-weight: 600;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        /* Permanent Footer Disclaimer */
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .spinner {
+            display: none;
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-banner {
+            display: none;
+            background: rgba(239, 68, 68, 0.18);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- PERMANENT REGULATORY DISCLAIMER HEADER (NON-DISMISSIBLE) -->
+        <aside class="disclaimer-banner" role="alert" aria-label="Regulatory Disclaimer">
+            <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45l8.27 14.3H3.73L12 5.45zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+            <div class="disclaimer-text">
+                <strong>Permanent Regulatory Notice:</strong> Research prototype. Not a diagnostic device. Not for clinical use. All outputs are investigational and must not be used for direct patient management.
+            </div>
+        </aside>
+
+        <header>
+            <h1>Chest X-Ray Pneumonia Screening</h1>
+            <p>Single-image AI inference powered by verified ResNet-18 baseline model</p>
+        </header>
+
+        <!-- Upload Form Card -->
+        <section class="card" aria-label="Upload Scan Section">
+            <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload medical scan area">
+                <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                <p class="main-text">Drag &amp; drop chest scan here, or browse</p>
+                <p class="sub-text">Supported clinical formats: DICOM (.dcm), PNG, JPG, JPEG (Max 50MB)</p>
+                <input type="file" id="file-input" accept=".dcm,.png,.jpg,.jpeg,application/dicom">
+            </div>
+
+            <div class="file-info-box" id="file-info-box">
+                <div class="file-name">
+                    <span>📄</span>
+                    <span id="display-filename">scan.dcm</span>
+                </div>
+                <div class="file-size" id="display-filesize">2.4 MB</div>
+            </div>
+
+            <div class="error-banner" id="error-banner"></div>
+
+            <button type="button" class="btn-submit" id="submit-btn" disabled>
+                <span id="btn-text">Analyze Scan</span>
+                <div class="spinner" id="btn-spinner"></div>
+            </button>
+        </section>
+
+        <!-- Results Display Card -->
+        <section class="card" id="results-panel" aria-live="polite">
+            <div class="result-header">
+                <h2>Analysis Assessment</h2>
+                <div class="status-badge" id="status-badge">NORMAL</div>
+            </div>
+
+            <div class="metric-grid">
+                <div class="metric-box">
+                    <div class="metric-label">Pneumonia Probability</div>
+                    <div class="metric-value" id="metric-prob">0.0%</div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+
+                <div class="metric-box">
+                    <div class="metric-label">Operating Decision Threshold</div>
+                    <div class="metric-value" id="metric-thresh">0.5000</div>
+                    <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.6rem;">Fixed binary classification threshold</div>
+                </div>
+            </div>
+
+            <div class="checkpoint-card">
+                <span class="checkpoint-label">Active Model Checkpoint</span>
+                <span class="checkpoint-value" id="display-checkpoint">best_baseline_model.pt</span>
+            </div>
+        </section>
+
+        <footer>
+            <p>Federated Medical AI System — Hospital Edge Demonstration Service (Port 8090)</p>
+            <p style="margin-top: 0.3rem; color: #475569;">Zero patient images are stored on disk. Audit entries logged to outputs/inference_log.jsonl</p>
+        </footer>
+    </div>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        const fileInfoBox = document.getElementById('file-info-box');
+        const displayFilename = document.getElementById('display-filename');
+        const displayFilesize = document.getElementById('display-filesize');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const resultsPanel = document.getElementById('results-panel');
+        const errorBanner = document.getElementById('error-banner');
+
+        const statusBadge = document.getElementById('status-badge');
+        const metricProb = document.getElementById('metric-prob');
+        const metricThresh = document.getElementById('metric-thresh');
+        const progressFill = document.getElementById('progress-fill');
+        const displayCheckpoint = document.getElementById('display-checkpoint');
+
+        let selectedFile = null;
+
+        // Trigger file browser on click
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+
+        // Drag & Drop handlers
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+            });
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                handleFileSelection(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelection(file) {
+            selectedFile = file;
+            displayFilename.textContent = file.name;
+            displayFilesize.textContent = formatBytes(file.size);
+            fileInfoBox.classList.add('active');
+            submitBtn.disabled = false;
+            hideError();
+            resultsPanel.style.display = 'none';
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function showError(message) {
+            errorBanner.textContent = message;
+            errorBanner.style.display = 'block';
+        }
+
+        function hideError() {
+            errorBanner.style.display = 'none';
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            hideError();
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnSpinner.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || `Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                renderResults(data);
+            } catch (err) {
+                showError(`Analysis failed: ${err.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnSpinner.style.display = 'none';
+            }
+        });
+
+        function renderResults(data) {
+            const prob = data.pneumonia_probability;
+            const pct = (prob * 100).toFixed(2);
+            metricProb.textContent = `${pct}%`;
+            metricThresh.textContent = data.threshold.toFixed(4);
+            displayCheckpoint.textContent = data.model_checkpoint;
+
+            progressFill.style.width = `${Math.min(100, Math.max(0, prob * 100))}%`;
+
+            if (data.prediction === 'pneumonia_suspected') {
+                statusBadge.textContent = 'PNEUMONIA SUSPECTED';
+                statusBadge.className = 'status-badge suspected';
+                progressFill.className = 'progress-fill fill-danger';
+            } else {
+                statusBadge.textContent = 'NORMAL';
+                statusBadge.className = 'status-badge normal';
+                progressFill.className = 'progress-fill fill-success';
+            }
+
+            resultsPanel.style.display = 'block';
+            resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+</html>
