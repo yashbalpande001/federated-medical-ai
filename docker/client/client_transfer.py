@@ -86,7 +86,7 @@ def main():
                 "client_id": str(client_id),
                 "metadata_json": json.dumps(metadata)
             }
-            resp = requests.post(url, data=data, files=files, timeout=60)
+            resp = requests.post(url, data=data, files=files, timeout=900)
             if resp.status_code == 200:
                 success = True
                 result = resp.json()
