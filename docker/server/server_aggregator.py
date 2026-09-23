@@ -63,7 +63,7 @@ def health_check():
             cid_int = cid
 
         meta = sub.get("metadata", {})
-        partition = meta.get("partition_idx", meta.get("partition", sub.get("partition", 0)))
+        partition = meta.get("partition_index", meta.get("partition_idx", meta.get("partition", sub.get("partition", 0))))
 
         pos_val = sub.get("positive_rate", meta.get("positive_percentage", 0.0))
         if float(pos_val) > 1.0:
