@@ -16,10 +16,14 @@ import sys
 import io
 import json
 import time
+import base64
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Tuple
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 import torch
@@ -35,8 +39,14 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.models.rsna_resnet import RSNABaselineResNet18
+from src.explainability.gradcam import GradCAM
 
 DISCLAIMER_TEXT = "Research prototype. Not a diagnostic device. Not for clinical use."
+SEVERITY_DISCLAIMER = (
+    "Severity is a confidence-based heuristic derived from model probability. "
+    "The training dataset (RSNA) has no clinician-assigned severity labels, so this is not "
+    "a validated severity score."
+)
 OUTPUT_LOG_PATH = PROJECT_ROOT / "outputs" / "inference_log.jsonl"
 OUTPUT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -119,6 +129,59 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Load model at module level (or during lifespan/startup) - will fail loudly if missing
 loaded_checkpoint_path = resolve_checkpoint_path()
 inference_model, checkpoint_filename = load_model(loaded_checkpoint_path, device)
+
+# Initialize Grad-CAM targeting model.layer4[1].conv2 (reused from Step 7)
+target_layer = getattr(inference_model, "resnet", inference_model).layer4[1].conv2
+grad_cam = GradCAM(inference_model, target_layer)
+
+
+# ---------------------------------------------------------------------------
+# SEVERITY LADDER & GRAD-CAM EXPLAINABILITY HELPERS
+# ---------------------------------------------------------------------------
+
+def compute_severity_level(prob: float) -> str:
+    """
+    Computes a 5-tier clinical confidence heuristic from pneumonia probability alone:
+      < 0.50     -> "Not detected"
+      0.50 - 0.65 -> "Mild"
+      0.65 - 0.80 -> "Moderate"
+      0.80 - 0.90 -> "Significant"
+      >= 0.90    -> "Severe"
+    """
+    if prob < 0.50:
+        return "Not detected"
+    elif prob < 0.65:
+        return "Mild"
+    elif prob < 0.80:
+        return "Moderate"
+    elif prob < 0.90:
+        return "Significant"
+    else:
+        return "Severe"
+
+
+def denormalize_image(tensor_3ch: torch.Tensor) -> np.ndarray:
+    """
+    Denormalizes an ImageNet-normalized 3-channel tensor [3, H, W] to uint8 RGB numpy array (H, W, 3).
+    """
+    mean = torch.tensor([0.485, 0.456, 0.406], device=tensor_3ch.device).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225], device=tensor_3ch.device).view(3, 1, 1)
+    denorm = tensor_3ch * std + mean
+    denorm = torch.clamp(denorm, 0.0, 1.0)
+    img_np = (denorm.permute(1, 2, 0).cpu().numpy() * 255.0).astype(np.uint8)
+    return img_np
+
+
+def overlay_heatmap_on_image(img_rgb: np.ndarray, heatmap_2d: np.ndarray, alpha: float = 0.4) -> np.ndarray:
+    """
+    Applies a JET colormap to a 2D normalized heatmap [0, 1] and blends it with the original RGB image.
+    Matches Step 7 overlay style: 0.6 * original + 0.4 * heatmap.
+    """
+    cmap = plt.get_cmap("jet")
+    rgba_heatmap = cmap(heatmap_2d)  # Shape: (H, W, 4)
+    rgb_heatmap = (rgba_heatmap[:, :, :3] * 255.0).astype(np.uint8)
+    blended = (1.0 - alpha) * img_rgb.astype(np.float32) + alpha * rgb_heatmap.astype(np.float32)
+    return np.clip(blended, 0.0, 255.0).astype(np.uint8)
 
 
 # ---------------------------------------------------------------------------
@@ -275,22 +338,46 @@ async def predict(file: UploadFile = File(...)):
     # Decision logic (standard 0.5 decision threshold)
     threshold = 0.5
     prediction_label = "pneumonia_suspected" if prob >= threshold else "normal"
+    severity_level = compute_severity_level(prob)
+
+    # In-memory Grad-CAM generation targeting model.layer4[1].conv2 (Step 7)
+    cam = grad_cam.generate_heatmap(input_tensor)
+    orig_img_uint8 = denormalize_image(input_tensor.squeeze(0))
+    overlay_img_uint8 = overlay_heatmap_on_image(orig_img_uint8, cam, alpha=0.4)
+
+    # Encode in-memory images as base64 PNGs (no disk persistence)
+    overlay_pil = Image.fromarray(overlay_img_uint8)
+    overlay_buf = io.BytesIO()
+    overlay_pil.save(overlay_buf, format="PNG")
+    overlay_base64 = base64.b64encode(overlay_buf.getvalue()).decode("utf-8")
+
+    orig_pil = Image.fromarray(orig_img_uint8)
+    orig_buf = io.BytesIO()
+    orig_pil.save(orig_buf, format="PNG")
+    orig_base64 = base64.b64encode(orig_buf.getvalue()).decode("utf-8")
 
     response_payload = {
         "pneumonia_probability": round(prob, 4),
         "threshold": threshold,
         "prediction": prediction_label,
+        "severity_level": severity_level,
+        "severity_disclaimer": SEVERITY_DISCLAIMER,
+        "gradcam_overlay_base64": overlay_base64,
+        "gradcam_base64": overlay_base64,
+        "original_image_base64": orig_base64,
         "model_checkpoint": checkpoint_filename,
         "disclaimer": DISCLAIMER_TEXT,
     }
 
     # Audit logging: append to outputs/inference_log.jsonl
     # Note: RAW PATIENT IMAGE BYTES ARE NEVER WRITTEN TO DISK.
+    # Base64 image payloads are excluded from logs to keep logs compact and prevent disk image persistence.
+    log_output = {k: v for k, v in response_payload.items() if not k.endswith("_base64")}
     log_entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "filename": file.filename,
         "file_size_bytes": len(contents),
-        "output": response_payload,
+        "output": log_output,
     }
 
     try:

@@ -224,11 +224,20 @@
             margin-bottom: 1.5rem;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
         }
 
         .result-header h2 {
             font-size: 1.35rem;
             font-weight: 600;
+        }
+
+        .header-badges {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
 
         .status-badge {
@@ -238,7 +247,7 @@
             padding: 0.45rem 1.1rem;
             border-radius: 9999px;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             letter-spacing: 0.3px;
             text-transform: uppercase;
         }
@@ -253,6 +262,241 @@
             background: var(--status-success-bg);
             color: #86efac;
             border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        /* Severity Badge & Disclaimer Tooltip */
+        .severity-badge-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .severity-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+        }
+
+        .severity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.42rem 0.95rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .severity-badge:hover, .severity-badge:focus-visible {
+            transform: translateY(-1px);
+        }
+
+        .severity-badge .info-icon {
+            width: 15px;
+            height: 15px;
+            opacity: 0.75;
+            transition: opacity 0.2s;
+        }
+
+        .severity-badge:hover .info-icon {
+            opacity: 1;
+        }
+
+        /* Severity color progression (increasing intensity) */
+        .severity-badge.sev-not-detected {
+            background: rgba(148, 163, 184, 0.14);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+        }
+
+        .severity-badge.sev-mild {
+            background: rgba(234, 179, 8, 0.16);
+            color: #fde047;
+            border: 1px solid rgba(234, 179, 8, 0.45);
+        }
+
+        .severity-badge.sev-moderate {
+            background: rgba(249, 115, 22, 0.20);
+            color: #fdba74;
+            border: 1px solid rgba(249, 115, 22, 0.55);
+        }
+
+        .severity-badge.sev-significant {
+            background: rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.65);
+        }
+
+        .severity-badge.sev-severe {
+            background: rgba(220, 38, 38, 0.38);
+            color: #fee2e2;
+            border: 1px solid rgba(239, 68, 68, 0.9);
+            box-shadow: 0 0 16px rgba(239, 68, 68, 0.35);
+        }
+
+        /* Disclaimer popover visible on hover or click (.active) */
+        .severity-popover {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 320px;
+            background: #0f172a;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            padding: 0.9rem 1rem;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        .severity-badge-container:hover .severity-popover,
+        .severity-popover.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .popover-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #fbbf24;
+            margin-bottom: 0.35rem;
+        }
+
+        .popover-body {
+            font-size: 0.82rem;
+            line-height: 1.45;
+            color: #e2e8f0;
+        }
+
+        /* Side-by-Side Visual Explanation Grid */
+        .visual-explanation-card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .visual-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .visual-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .visual-title h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .visual-icon {
+            width: 20px;
+            height: 20px;
+            fill: var(--accent-blue);
+        }
+
+        .layer-tag {
+            font-size: 0.75rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: rgba(59, 130, 246, 0.12);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            padding: 0.2rem 0.55rem;
+            border-radius: 4px;
+        }
+
+        .image-comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .image-comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            .header-badges {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .severity-popover {
+                right: auto;
+                left: 0;
+            }
+        }
+
+        .image-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(11, 15, 25, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .image-tag {
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+        }
+
+        .image-tag.highlight {
+            color: #93c5fd;
+        }
+
+        .image-wrapper {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-width: 320px;
+            background: #000000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-caption {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: 0.65rem;
+            text-align: center;
         }
 
         .metric-grid {
@@ -417,7 +661,22 @@
         <section class="card" id="results-panel" aria-live="polite">
             <div class="result-header">
                 <h2>Analysis Assessment</h2>
-                <div class="status-badge" id="status-badge">NORMAL</div>
+                <div class="header-badges">
+                    <div class="status-badge" id="status-badge">NORMAL</div>
+                    <div class="severity-badge-container" id="severity-container">
+                        <span class="severity-label">Severity:</span>
+                        <div class="severity-badge sev-not-detected" id="severity-badge" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false" title="Click or hover for severity disclaimer">
+                            <span id="severity-text">Not detected</span>
+                            <svg class="info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                        </div>
+                        <div class="severity-popover" id="severity-popover" role="tooltip">
+                            <div class="popover-title">Severity Heuristic Notice</div>
+                            <div class="popover-body" id="severity-disclaimer-text">
+                                Severity is a confidence-based heuristic derived from model probability. The training dataset (RSNA) has no clinician-assigned severity labels, so this is not a validated severity score.
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="metric-grid">
@@ -433,6 +692,33 @@
                     <div class="metric-label">Operating Decision Threshold</div>
                     <div class="metric-value" id="metric-thresh">0.5000</div>
                     <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.6rem;">Fixed binary classification threshold</div>
+                </div>
+            </div>
+
+            <!-- Side-by-Side Visual Explanation Grid -->
+            <div class="visual-explanation-card">
+                <div class="visual-header">
+                    <div class="visual-title">
+                        <svg viewBox="0 0 24 24" class="visual-icon"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        <h3>Visual Explanation &amp; Saliency Analysis</h3>
+                    </div>
+                    <span class="layer-tag">Grad-CAM: layer4[1].conv2</span>
+                </div>
+                <div class="image-comparison-grid">
+                    <div class="image-box">
+                        <div class="image-tag">Original Chest X-Ray</div>
+                        <div class="image-wrapper">
+                            <img id="orig-image" alt="Original Chest X-Ray scan" src="" />
+                        </div>
+                        <div class="image-caption">Preprocessed 224x224 scan</div>
+                    </div>
+                    <div class="image-box">
+                        <div class="image-tag highlight">Grad-CAM Saliency Overlay</div>
+                        <div class="image-wrapper">
+                            <img id="gradcam-image" alt="Grad-CAM Saliency Heatmap Overlay" src="" />
+                        </div>
+                        <div class="image-caption">Warm regions indicate focal diagnostic attention (JET colormap)</div>
+                    </div>
                 </div>
             </div>
 
@@ -461,6 +747,13 @@
         const errorBanner = document.getElementById('error-banner');
 
         const statusBadge = document.getElementById('status-badge');
+        const severityBadge = document.getElementById('severity-badge');
+        const severityText = document.getElementById('severity-text');
+        const severityPopover = document.getElementById('severity-popover');
+        const severityDisclaimerText = document.getElementById('severity-disclaimer-text');
+        const origImage = document.getElementById('orig-image');
+        const gradcamImage = document.getElementById('gradcam-image');
+
         const metricProb = document.getElementById('metric-prob');
         const metricThresh = document.getElementById('metric-thresh');
         const progressFill = document.getElementById('progress-fill');
@@ -566,6 +859,28 @@
             }
         });
 
+        // Interactive Severity Disclaimer Toggle
+        severityBadge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = severityPopover.classList.contains('active');
+            severityPopover.classList.toggle('active', !isOpen);
+            severityBadge.setAttribute('aria-expanded', String(!isOpen));
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!severityBadge.contains(e.target) && !severityPopover.contains(e.target)) {
+                severityPopover.classList.remove('active');
+                severityBadge.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                severityPopover.classList.remove('active');
+                severityBadge.setAttribute('aria-expanded', 'false');
+            }
+        });
+
         function renderResults(data) {
             const prob = data.pneumonia_probability;
             const pct = (prob * 100).toFixed(2);
@@ -583,6 +898,28 @@
                 statusBadge.textContent = 'NORMAL';
                 statusBadge.className = 'status-badge normal';
                 progressFill.className = 'progress-fill fill-success';
+            }
+
+            // Severity Level Badge (color intensity increasing with severity)
+            const severityLevel = data.severity_level || 'Not detected';
+            severityText.textContent = severityLevel;
+            const sevClass = severityLevel.toLowerCase().replace(/\s+/g, '-');
+            severityBadge.className = `severity-badge sev-${sevClass}`;
+
+            if (data.severity_disclaimer) {
+                severityDisclaimerText.textContent = data.severity_disclaimer;
+            }
+
+            // Side-by-Side Images (Original and Grad-CAM)
+            if (data.original_image_base64) {
+                origImage.src = `data:image/png;base64,${data.original_image_base64}`;
+            } else if (selectedFile && !selectedFile.name.toLowerCase().endsWith('.dcm')) {
+                origImage.src = URL.createObjectURL(selectedFile);
+            }
+
+            const b64 = data.gradcam_overlay_base64 || data.gradcam_base64;
+            if (b64) {
+                gradcamImage.src = `data:image/png;base64,${b64}`;
             }
 
             resultsPanel.style.display = 'block';

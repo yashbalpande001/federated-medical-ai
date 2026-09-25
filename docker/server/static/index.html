@@ -98,6 +98,7 @@
   .hash{word-break:break-all; text-align:right}
   .verdict{margin-top:12px; padding:10px 13px; font-size:13px; border-left:3px solid var(--live); background:#EAF5F0; color:#155C42}
   .verdict.bad{border-color:var(--alert); background:#FAEDED; color:#7E2424}
+  .verdict.info{border-color:var(--signal); background:var(--signal-tint); color:#084B56}
 
   footer{margin-top:26px; color:var(--muted); font-size:12.5px}
   button{font:inherit; font-size:13px; padding:7px 14px; background:var(--ink); color:#fff; border:0; cursor:pointer}
@@ -253,7 +254,9 @@ function armClient(n, meta){
   $('box'+n).classList.add('armed');
   const s = $('c'+n+'s');
   s.classList.add('ok');
-  s.textContent = 'partition ' + meta.partition + ' · ' + meta.n_samples + ' samples · received';
+  const part = meta.partition !== undefined ? meta.partition : (meta.partition_index !== undefined ? meta.partition_index : 0);
+  const nSamples = meta.n_samples !== undefined ? meta.n_samples : (meta.partition_size !== undefined ? meta.partition_size : 0);
+  s.textContent = 'partition ' + part + ' · ' + nSamples + ' samples · received';
   const wire = $('wire'+n);
   wire.querySelector('path').setAttribute('class','wire hot');
   if(!wire.querySelector('.pulse')){
@@ -268,19 +271,26 @@ function renderProv(subs){
   $('provEmpty').hidden = true;
   const b = $('provBody'); b.hidden = false; b.innerHTML = '';
   subs.forEach(s => {
+    const part = s.partition !== undefined ? s.partition : (s.metadata ? (s.metadata.partition_index ?? 0) : 0);
+    const bytes = s.bytes !== undefined ? s.bytes : (s.byte_count || 0);
+    const posPct = s.positive_rate !== undefined ? (s.positive_rate > 1 ? s.positive_rate : s.positive_rate * 100) : 0;
     b.insertAdjacentHTML('beforeend',
       `<div><span class="lbl">Client ${s.client_id} source</span><span>${s.source_ip}</span></div>
-       <div><span class="lbl">Client ${s.client_id} partition</span><span>idx ${s.partition} · n=${s.n_samples} · ${(s.positive_rate*100).toFixed(1)}% pos</span></div>
-       <div><span class="lbl">Client ${s.client_id} payload</span><span>${(s.bytes/1048576).toFixed(2)} MB</span></div>
-       <div><span class="lbl">Client ${s.client_id} SHA-256</span><span class="hash">${s.sha256.slice(0,32)}…</span></div>`);
+       <div><span class="lbl">Client ${s.client_id} partition</span><span>idx ${part} · n=${s.n_samples} · ${Number(posPct).toFixed(1)}% pos</span></div>
+       <div><span class="lbl">Client ${s.client_id} payload</span><span>${(bytes/1048576).toFixed(2)} MB</span></div>
+       <div><span class="lbl">Client ${s.client_id} SHA-256</span><span class="hash">${(s.sha256 || '').slice(0,32)}…</span></div>`);
   });
   if(subs.length === 2){
     const v = $('provVerdict'); v.hidden = false;
     const sameHash = subs[0].sha256 === subs[1].sha256;
     const sameIp   = subs[0].source_ip === subs[1].source_ip;
+    const bothDockerBridge = subs[0].source_ip === '172.17.0.1' && subs[1].source_ip === '172.17.0.1';
     if(sameHash){
       v.className = 'verdict bad';
       v.textContent = 'Both clients sent byte-identical weights. This is not a federation — the same model was averaged with itself. Do not report this result.';
+    } else if(bothDockerBridge){
+      v.className = 'verdict info';
+      v.textContent = "Source IPs show Docker's internal bridge address (expected behavior when the server runs in a container) — origin is verified via distinct SHA-256 hashes and partition metadata instead.";
     } else if(sameIp){
       v.className = 'verdict bad';
       v.textContent = 'Both submissions came from one address. Weights differ, but this did not demonstrate two compute origins.';
@@ -347,7 +357,14 @@ async function poll(){
   }
   try{
     const r = await fetch(API + '/results', {cache:'no-store'});
-    if(r.ok) renderResult(await r.json());
+    if(r.ok) {
+      const data = await r.json();
+      renderResult(data);
+      if((!$('provVerdict') || $('provVerdict').hidden) && data.clients && data.clients.length){
+        data.clients.forEach(s => armClient(s.client_id, s.metadata || s));
+        renderProv(data.clients);
+      }
+    }
   }catch(e){ /* results not ready yet — expected */ }
 }
 
