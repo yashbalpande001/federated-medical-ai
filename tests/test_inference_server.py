@@ -24,7 +24,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.inference_server import app, resolve_checkpoint_path, DISCLAIMER_TEXT
+from app.inference_server import app, resolve_checkpoint_path, DISCLAIMER_TEXT, SEVERITY_LEGEND_TEXT
 
 client = TestClient(app)
 
@@ -47,6 +47,7 @@ def test_health_endpoint():
     assert data["port"] == 8090
     assert data["threshold"] == 0.5
     assert data["disclaimer"] == DISCLAIMER_TEXT
+    assert data["severity_legend"] == SEVERITY_LEGEND_TEXT
     assert "model_checkpoint" in data
     assert data["model_checkpoint"] in ["best_baseline_model.pt", "best_model.pt"]
 
@@ -58,6 +59,8 @@ def test_doctor_ui_served():
     assert "Chest X-Ray Pneumonia Screening" in resp.text
     assert DISCLAIMER_TEXT in resp.text
     assert "Permanent Regulatory Notice" in resp.text
+    assert SEVERITY_LEGEND_TEXT in resp.text
+    assert "Primary screening threshold (fixed, optimized for sensitivity)" in resp.text
 
 
 def create_sample_png_bytes(width=256, height=256) -> bytes:
@@ -123,7 +126,37 @@ def test_predict_png_image():
 
     assert data["model_checkpoint"] in ["best_baseline_model.pt", "best_model.pt"]
     assert data["disclaimer"] == DISCLAIMER_TEXT
+    assert data["severity_legend"] == SEVERITY_LEGEND_TEXT
 
+def test_predict_gradcam_and_severity_integration():
+    """Tests that a single /predict response contains both severity_level
+    and a non-empty Grad-CAM overlay together, confirming the two features
+    are actually wired together in one response, not just independently."""
+    png_bytes = create_sample_png_bytes(256, 256)
+    resp = client.post(
+        "/predict",
+        files={"file": ("test_scan.png", png_bytes, "image/png")}
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+
+    # Severity field present and valid
+    assert "severity_level" in data
+    assert data["severity_level"] in [
+        "Not detected", "Mild", "Moderate", "Significant", "Severe"
+    ]
+    assert "severity_disclaimer" in data
+    assert len(data["severity_disclaimer"]) > 0
+
+    # Grad-CAM overlay present and non-empty
+    gradcam_key = "gradcam_base64" if "gradcam_base64" in data else "gradcam_overlay_base64"
+    assert gradcam_key in data, f"No Grad-CAM field found in response keys: {list(data.keys())}"
+    assert isinstance(data[gradcam_key], str)
+    assert len(data[gradcam_key]) > 100  # a real base64 image, not an empty string
+
+    # Severity must be internally consistent with the returned probability
+    from app.inference_server import compute_severity_level
+    assert data["severity_level"] == compute_severity_level(data["pneumonia_probability"])
 
 def test_predict_dicom_image():
     """Tests POST /predict with a synthetic DICOM file."""
@@ -148,6 +181,7 @@ def test_predict_empty_file_fails():
     )
     assert resp.status_code == 400
     assert "empty" in resp.json()["detail"].lower()
+
 
 
 def test_audit_log_written_and_no_images_saved():
@@ -182,3 +216,28 @@ def test_audit_log_written_and_no_images_saved():
     # Crucial security & privacy check: verify test_filename was NOT saved to disk
     assert not (PROJECT_ROOT / test_filename).exists()
     assert not (PROJECT_ROOT / "outputs" / test_filename).exists()
+
+from app.inference_server import compute_severity_level
+
+
+def test_severity_ladder_heuristic():
+    # Below mild threshold
+    assert compute_severity_level(0.49) == "Not detected"
+    assert compute_severity_level(0.0) == "Not detected"
+
+    # Mild band: [0.50, 0.65)
+    assert compute_severity_level(0.50) == "Mild"
+    assert compute_severity_level(0.64) == "Mild"
+
+    # Moderate band: [0.65, 0.80)
+    assert compute_severity_level(0.65) == "Moderate"
+    assert compute_severity_level(0.79) == "Moderate"
+
+    # Significant band: [0.80, 0.90)
+    assert compute_severity_level(0.80) == "Significant"
+    assert compute_severity_level(0.89) == "Significant"
+
+    # Severe band: [0.90, 1.0]
+    assert compute_severity_level(0.90) == "Severe"
+    assert compute_severity_level(0.99) == "Severe"
+    assert compute_severity_level(1.0) == "Severe"
