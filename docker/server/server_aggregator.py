@@ -18,6 +18,14 @@ from sklearn.metrics import roc_auc_score, f1_score, precision_score, recall_sco
 
 app = FastAPI(title="Federated Medical AI Real Aggregation Server")
 
+@app.middleware("http")
+async def add_no_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 PROJECT_ROOT = Path("/app") if os.path.exists("/app/server_aggregator.py") else Path(".")
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -298,8 +306,9 @@ def get_results():
             data = json.load(f)
         return data
 
-    latest = round_history[-1]
-    res = dict(latest)
+    live_rounds = [r for r in round_history if not r.get("is_test_submission", False) and not r.get("is_test", False)]
+    target = live_rounds[-1] if live_rounds else round_history[-1]
+    res = dict(target)
     res["rounds"] = round_history
     res["history"] = round_history
     return res

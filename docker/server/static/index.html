@@ -272,8 +272,6 @@
         <thead><tr><th>Experiment</th><th>Topology</th><th class="num">AUC</th><th class="num">Recall</th><th>Status</th></tr></thead>
         <tbody>
           <tr><td>Step 5 centralized baseline</td><td>Single GPU</td><td class="num">0.8536</td><td class="num">0.8173</td><td>Verified</td></tr>
-          <tr><td>Step 10 FedAvg</td><td>5 clients, Dirichlet 0.5</td><td class="num">0.8291</td><td class="num">0.0865</td><td>Verified</td></tr>
-          <tr><td>Step 11 FedProx μ=0.1</td><td>5 clients, Dirichlet 0.5</td><td class="num">0.8249</td><td class="num">0.2067</td><td>Verified</td></tr>
           <tr class="here" id="ledgerLive"><td>Live multi-machine round</td><td>2 clients, Docker + Tailscale</td><td class="num" id="ledAuc">—</td><td class="num" id="ledRec">—</td><td class="flag" id="ledStatus">Pending</td></tr>
         </tbody>
       </table>
@@ -469,7 +467,8 @@ function renderResult(r){
 }
 
 function renderHistory(rounds){
-  if(!rounds || !rounds.length){
+  const liveRounds = (rounds || []).filter(rnd => !rnd.is_test_submission && !rnd.is_test);
+  if(!liveRounds || !liveRounds.length){
     $('historyEmpty').hidden = false;
     $('historyBody').hidden = true;
     return;
@@ -477,15 +476,14 @@ function renderHistory(rounds){
   $('historyEmpty').hidden = true;
   $('historyBody').hidden = false;
 
-  currentRoundsData = rounds;
-  updateLedger(rounds);
+  currentRoundsData = liveRounds;
+  updateLedger(liveRounds);
 
   const tbody = $('historyRows');
   tbody.innerHTML = '';
 
-  rounds.forEach((r, idx) => {
+  liveRounds.forEach((r, idx) => {
     const roundNum = r.round !== undefined ? r.round : (idx + 1);
-    const isTest = r.is_test_submission === true || r.is_test === true;
     let dateStr = '—';
     if(r.timestamp){
       dateStr = r.timestamp.includes('T') ? r.timestamp.replace('T', ' ').slice(0, 19) + ' UTC' : r.timestamp;
@@ -504,10 +502,8 @@ function renderHistory(rounds){
 
     const tr = document.createElement('tr');
     tr.className = 'h-row';
-    tr.title = (isTest ? '[TEST RUN] ' : '') + 'Click to open details modal for Round ' + roundNum;
-    const badgeHtml = isTest
-      ? `<span class="h-badge test">R${roundNum}</span><span class="badge-test">TEST</span>`
-      : `<span class="h-badge">R${roundNum}</span>`;
+    tr.title = 'Click to open details modal for Round ' + roundNum;
+    const badgeHtml = `<span class="h-badge">R${roundNum}</span>`;
 
     tr.innerHTML = `
       <td>${badgeHtml}</td>
