@@ -18,6 +18,8 @@ weights/*
 !weights/.gitkeep
 outputs/*
 !outputs/.gitkeep
+!outputs/round_history.json
+!outputs/round1_results.json
 *.zip
 
 # Python & Cache

@@ -1,0 +1,95 @@
+{
+    "round": 2,
+    "rounds_executed": 2,
+    "auc": 0.816,
+    "recall": 0.101,
+    "precision": 0.7778,
+    "specificity": 0.9913,
+    "f1": 0.1787,
+    "confusion_matrix": [
+        [
+            686,
+            6
+        ],
+        [
+            187,
+            21
+        ]
+    ],
+    "learning_rate": 0.0001,
+    "total_weight_l2_norm": 0.279849,
+    "per_layer_l2_norm": {
+        "conv1": 0.007877,
+        "bn1": 0.00095,
+        "layer1": 0.031992,
+        "layer2": 0.060722,
+        "layer3": 0.121294,
+        "layer4": 0.242539,
+        "fc": 0.002199
+    },
+    "timestamp": "2026-09-26T11:53:06Z",
+    "clients": [
+        {
+            "client_id": "1",
+            "source_ip": "testclient",
+            "sha256": "6b7086d1a8ca80a75b17ca2fbfcf190e59ce084a379be560f597f365b8f6a81f",
+            "byte_count": 44785163,
+            "n_samples": 1366,
+            "positive_rate": 57.03,
+            "metadata": {
+                "client_id": 1,
+                "hardware_assignment": "Friend's PC (Ryzen 7, RTX 4050, 16GB RAM)",
+                "partition_index": 0,
+                "partition_size": 1366,
+                "positive_count": 779,
+                "positive_percentage": 57.03,
+                "epochs_trained": 1,
+                "learning_rate": 0.0001,
+                "pre_train_loss": 0.9803,
+                "post_train_loss": 1.123,
+                "training_time_seconds": 12.4,
+                "timestamp": "2026-09-26T11:52:19Z"
+            }
+        },
+        {
+            "client_id": "2",
+            "source_ip": "testclient",
+            "sha256": "e0b8289736ca2d693aecd4b43e641d423b37a8fed175df331b54b0e88925cbe9",
+            "byte_count": 44785163,
+            "n_samples": 305,
+            "positive_rate": 29.84,
+            "metadata": {
+                "client_id": 2,
+                "hardware_assignment": "Second PC (i5, no GPU, 16GB RAM)",
+                "partition_index": 3,
+                "partition_size": 305,
+                "positive_count": 91,
+                "positive_percentage": 29.84,
+                "epochs_trained": 1,
+                "learning_rate": 0.0001,
+                "pre_train_loss": 1.0476,
+                "post_train_loss": 1.2783,
+                "training_time_seconds": 3.1,
+                "timestamp": "2026-09-26T11:52:24Z"
+            }
+        }
+    ],
+    "metrics": {
+        "auc": 0.816,
+        "recall": 0.101,
+        "specificity": 0.9913,
+        "precision": 0.7778,
+        "f1": 0.1787,
+        "confusion_matrix": [
+            [
+                686,
+                6
+            ],
+            [
+                187,
+                21
+            ]
+        ]
+    },
+    "is_test_submission": false
+}

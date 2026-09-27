@@ -1,0 +1,386 @@
+{
+    "rounds": [
+        {
+            "rounds_executed": 1,
+            "auc": 0.8101,
+            "recall": 0.9856,
+            "precision": 0.2916,
+            "specificity": 0.2803,
+            "confusion_matrix": [
+                [
+                    194,
+                    498
+                ],
+                [
+                    3,
+                    205
+                ]
+            ],
+            "f1": 0.4501,
+            "timestamp": "2026-09-20T13:21:17Z",
+            "clients": [
+                {
+                    "client_id": "1",
+                    "source_ip": "172.17.0.1",
+                    "sha256": "375b08144e64e14f6698b530225ba920eb4e3b8e8375ef1537bf66d06433f060",
+                    "byte_count": 44788427,
+                    "n_samples": 1366,
+                    "positive_rate": 57.03,
+                    "metadata": {
+                        "client_id": 1,
+                        "hardware_assignment": "Friend's PC (Ryzen 7, RTX 4050, 16GB RAM)",
+                        "partition_index": 0,
+                        "partition_size": 1366,
+                        "positive_count": 779,
+                        "positive_percentage": 57.03,
+                        "epochs_trained": 1,
+                        "pre_train_loss": 1.3557,
+                        "post_train_loss": 0.9803,
+                        "training_time_seconds": 13.11,
+                        "timestamp": "2026-09-20T11:55:13Z",
+                        "learning_rate": 0.0001
+                    }
+                },
+                {
+                    "client_id": "2",
+                    "source_ip": "172.17.0.1",
+                    "sha256": "611bc7903f17ade85f9d35b2f7c55604ce0c508a53b34d8fa9ce41ba394fa23d",
+                    "byte_count": 44788427,
+                    "n_samples": 305,
+                    "positive_rate": 29.84,
+                    "metadata": {
+                        "client_id": 2,
+                        "hardware_assignment": "Second PC (i5, no GPU, 16GB RAM)",
+                        "partition_index": 3,
+                        "partition_size": 305,
+                        "positive_count": 91,
+                        "positive_percentage": 29.84,
+                        "epochs_trained": 1,
+                        "pre_train_loss": 1.1698,
+                        "post_train_loss": 1.0476,
+                        "training_time_seconds": 3.06,
+                        "timestamp": "2026-09-20T08:56:23Z",
+                        "learning_rate": 0.0001
+                    }
+                }
+            ],
+            "metrics": {
+                "auc": 0.8101,
+                "recall": 0.9856,
+                "specificity": 0.2803,
+                "precision": 0.2916,
+                "f1": 0.4501,
+                "confusion_matrix": [
+                    [
+                        194,
+                        498
+                    ],
+                    [
+                        3,
+                        205
+                    ]
+                ]
+            },
+            "round": 1,
+            "learning_rate": 0.0001,
+            "total_weight_l2_norm": 4.061584,
+            "per_layer_l2_norm": {
+                "conv1": 0.101756,
+                "bn1": 0.014648,
+                "layer1": 0.469097,
+                "layer2": 0.918422,
+                "layer3": 1.816104,
+                "layer4": 3.481603,
+                "fc": 0.050527
+            },
+            "is_test_submission": false
+        },
+        {
+            "round": 2,
+            "rounds_executed": 2,
+            "auc": 0.816,
+            "recall": 0.101,
+            "precision": 0.7778,
+            "specificity": 0.9913,
+            "f1": 0.1787,
+            "confusion_matrix": [
+                [
+                    686,
+                    6
+                ],
+                [
+                    187,
+                    21
+                ]
+            ],
+            "learning_rate": 0.0001,
+            "total_weight_l2_norm": 0.279849,
+            "per_layer_l2_norm": {
+                "conv1": 0.007877,
+                "bn1": 0.00095,
+                "layer1": 0.031992,
+                "layer2": 0.060722,
+                "layer3": 0.121294,
+                "layer4": 0.242539,
+                "fc": 0.002199
+            },
+            "timestamp": "2026-09-26T11:53:06Z",
+            "clients": [
+                {
+                    "client_id": "1",
+                    "source_ip": "testclient",
+                    "sha256": "6b7086d1a8ca80a75b17ca2fbfcf190e59ce084a379be560f597f365b8f6a81f",
+                    "byte_count": 44785163,
+                    "n_samples": 1366,
+                    "positive_rate": 57.03,
+                    "metadata": {
+                        "client_id": 1,
+                        "hardware_assignment": "Friend's PC (Ryzen 7, RTX 4050, 16GB RAM)",
+                        "partition_index": 0,
+                        "partition_size": 1366,
+                        "positive_count": 779,
+                        "positive_percentage": 57.03,
+                        "epochs_trained": 1,
+                        "learning_rate": 0.0001,
+                        "pre_train_loss": 0.9803,
+                        "post_train_loss": 1.123,
+                        "training_time_seconds": 12.4,
+                        "timestamp": "2026-09-26T11:52:19Z"
+                    }
+                },
+                {
+                    "client_id": "2",
+                    "source_ip": "testclient",
+                    "sha256": "e0b8289736ca2d693aecd4b43e641d423b37a8fed175df331b54b0e88925cbe9",
+                    "byte_count": 44785163,
+                    "n_samples": 305,
+                    "positive_rate": 29.84,
+                    "metadata": {
+                        "client_id": 2,
+                        "hardware_assignment": "Second PC (i5, no GPU, 16GB RAM)",
+                        "partition_index": 3,
+                        "partition_size": 305,
+                        "positive_count": 91,
+                        "positive_percentage": 29.84,
+                        "epochs_trained": 1,
+                        "learning_rate": 0.0001,
+                        "pre_train_loss": 1.0476,
+                        "post_train_loss": 1.2783,
+                        "training_time_seconds": 3.1,
+                        "timestamp": "2026-09-26T11:52:24Z"
+                    }
+                }
+            ],
+            "metrics": {
+                "auc": 0.816,
+                "recall": 0.101,
+                "specificity": 0.9913,
+                "precision": 0.7778,
+                "f1": 0.1787,
+                "confusion_matrix": [
+                    [
+                        686,
+                        6
+                    ],
+                    [
+                        187,
+                        21
+                    ]
+                ]
+            },
+            "is_test_submission": true
+        }
+    ],
+    "by_round": {
+        "1": {
+            "rounds_executed": 1,
+            "auc": 0.8101,
+            "recall": 0.9856,
+            "precision": 0.2916,
+            "specificity": 0.2803,
+            "confusion_matrix": [
+                [
+                    194,
+                    498
+                ],
+                [
+                    3,
+                    205
+                ]
+            ],
+            "f1": 0.4501,
+            "timestamp": "2026-09-20T13:21:17Z",
+            "clients": [
+                {
+                    "client_id": "1",
+                    "source_ip": "172.17.0.1",
+                    "sha256": "375b08144e64e14f6698b530225ba920eb4e3b8e8375ef1537bf66d06433f060",
+                    "byte_count": 44788427,
+                    "n_samples": 1366,
+                    "positive_rate": 57.03,
+                    "metadata": {
+                        "client_id": 1,
+                        "hardware_assignment": "Friend's PC (Ryzen 7, RTX 4050, 16GB RAM)",
+                        "partition_index": 0,
+                        "partition_size": 1366,
+                        "positive_count": 779,
+                        "positive_percentage": 57.03,
+                        "epochs_trained": 1,
+                        "pre_train_loss": 1.3557,
+                        "post_train_loss": 0.9803,
+                        "training_time_seconds": 13.11,
+                        "timestamp": "2026-09-20T11:55:13Z",
+                        "learning_rate": 0.0001
+                    }
+                },
+                {
+                    "client_id": "2",
+                    "source_ip": "172.17.0.1",
+                    "sha256": "611bc7903f17ade85f9d35b2f7c55604ce0c508a53b34d8fa9ce41ba394fa23d",
+                    "byte_count": 44788427,
+                    "n_samples": 305,
+                    "positive_rate": 29.84,
+                    "metadata": {
+                        "client_id": 2,
+                        "hardware_assignment": "Second PC (i5, no GPU, 16GB RAM)",
+                        "partition_index": 3,
+                        "partition_size": 305,
+                        "positive_count": 91,
+                        "positive_percentage": 29.84,
+                        "epochs_trained": 1,
+                        "pre_train_loss": 1.1698,
+                        "post_train_loss": 1.0476,
+                        "training_time_seconds": 3.06,
+                        "timestamp": "2026-09-20T08:56:23Z",
+                        "learning_rate": 0.0001
+                    }
+                }
+            ],
+            "metrics": {
+                "auc": 0.8101,
+                "recall": 0.9856,
+                "specificity": 0.2803,
+                "precision": 0.2916,
+                "f1": 0.4501,
+                "confusion_matrix": [
+                    [
+                        194,
+                        498
+                    ],
+                    [
+                        3,
+                        205
+                    ]
+                ]
+            },
+            "round": 1,
+            "learning_rate": 0.0001,
+            "total_weight_l2_norm": 4.061584,
+            "per_layer_l2_norm": {
+                "conv1": 0.101756,
+                "bn1": 0.014648,
+                "layer1": 0.469097,
+                "layer2": 0.918422,
+                "layer3": 1.816104,
+                "layer4": 3.481603,
+                "fc": 0.050527
+            },
+            "is_test_submission": false
+        },
+        "2": {
+            "round": 2,
+            "rounds_executed": 2,
+            "auc": 0.816,
+            "recall": 0.101,
+            "precision": 0.7778,
+            "specificity": 0.9913,
+            "f1": 0.1787,
+            "confusion_matrix": [
+                [
+                    686,
+                    6
+                ],
+                [
+                    187,
+                    21
+                ]
+            ],
+            "learning_rate": 0.0001,
+            "total_weight_l2_norm": 0.279849,
+            "per_layer_l2_norm": {
+                "conv1": 0.007877,
+                "bn1": 0.00095,
+                "layer1": 0.031992,
+                "layer2": 0.060722,
+                "layer3": 0.121294,
+                "layer4": 0.242539,
+                "fc": 0.002199
+            },
+            "timestamp": "2026-09-26T11:53:06Z",
+            "clients": [
+                {
+                    "client_id": "1",
+                    "source_ip": "testclient",
+                    "sha256": "6b7086d1a8ca80a75b17ca2fbfcf190e59ce084a379be560f597f365b8f6a81f",
+                    "byte_count": 44785163,
+                    "n_samples": 1366,
+                    "positive_rate": 57.03,
+                    "metadata": {
+                        "client_id": 1,
+                        "hardware_assignment": "Friend's PC (Ryzen 7, RTX 4050, 16GB RAM)",
+                        "partition_index": 0,
+                        "partition_size": 1366,
+                        "positive_count": 779,
+                        "positive_percentage": 57.03,
+                        "epochs_trained": 1,
+                        "learning_rate": 0.0001,
+                        "pre_train_loss": 0.9803,
+                        "post_train_loss": 1.123,
+                        "training_time_seconds": 12.4,
+                        "timestamp": "2026-09-26T11:52:19Z"
+                    }
+                },
+                {
+                    "client_id": "2",
+                    "source_ip": "testclient",
+                    "sha256": "e0b8289736ca2d693aecd4b43e641d423b37a8fed175df331b54b0e88925cbe9",
+                    "byte_count": 44785163,
+                    "n_samples": 305,
+                    "positive_rate": 29.84,
+                    "metadata": {
+                        "client_id": 2,
+                        "hardware_assignment": "Second PC (i5, no GPU, 16GB RAM)",
+                        "partition_index": 3,
+                        "partition_size": 305,
+                        "positive_count": 91,
+                        "positive_percentage": 29.84,
+                        "epochs_trained": 1,
+                        "learning_rate": 0.0001,
+                        "pre_train_loss": 1.0476,
+                        "post_train_loss": 1.2783,
+                        "training_time_seconds": 3.1,
+                        "timestamp": "2026-09-26T11:52:24Z"
+                    }
+                }
+            ],
+            "metrics": {
+                "auc": 0.816,
+                "recall": 0.101,
+                "specificity": 0.9913,
+                "precision": 0.7778,
+                "f1": 0.1787,
+                "confusion_matrix": [
+                    [
+                        686,
+                        6
+                    ],
+                    [
+                        187,
+                        21
+                    ]
+                ]
+            },
+            "is_test_submission": true
+        }
+    }
+}

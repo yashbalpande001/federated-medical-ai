@@ -58,6 +58,20 @@ def main():
     with open(metadata_path, "r", encoding="utf-8") as f:
         metadata = json.load(f)
 
+    # Ensure learning_rate used for local training is verified and present in metadata payload
+    if "learning_rate" not in metadata:
+        if "lr" in metadata:
+            metadata["learning_rate"] = metadata["lr"]
+        else:
+            lr_env = os.environ.get("LEARNING_RATE", "0.0001")
+            try:
+                metadata["learning_rate"] = float(lr_env)
+            except ValueError:
+                metadata["learning_rate"] = 0.0001
+        print(f"[CLIENT {client_id}] Verified local training learning_rate: {metadata['learning_rate']}")
+    else:
+        print(f"[CLIENT {client_id}] Loaded verified local training learning_rate: {metadata['learning_rate']}")
+
     # Open weights file in binary mode - ZERO TORCH DEPENDENCY
     with open(weights_path, "rb") as f:
         weight_bytes = f.read()
@@ -82,9 +96,11 @@ def main():
             files = {
                 "weights_file": (f"client{client_id}_weights.pt", weight_bytes, "application/octet-stream")
             }
+            is_test_env = os.environ.get("IS_TEST_SUBMISSION", "false").strip().lower() in ("true", "1", "yes")
             data = {
                 "client_id": str(client_id),
-                "metadata_json": json.dumps(metadata)
+                "metadata_json": json.dumps(metadata),
+                "is_test_submission": "true" if is_test_env else "false"
             }
             resp = requests.post(url, data=data, files=files, timeout=900)
             if resp.status_code == 200:
