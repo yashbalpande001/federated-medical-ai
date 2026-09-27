@@ -47,6 +47,26 @@ SEVERITY_DISCLAIMER = (
     "The training dataset (RSNA) has no clinician-assigned severity labels, so this is not "
     "a validated severity score."
 )
+
+# Operating decision threshold for pneumonia screening (fixed binary classification threshold)
+DECISION_THRESHOLD = 0.70
+
+# Severity band boundary constants (confidence thresholds)
+SEVERITY_THRESHOLDS = {
+    "mild": 0.70,
+    "moderate": 0.79,
+    "significant": 0.88,
+    "severe": 0.94,
+}
+
+SEVERITY_LEGEND_TEXT = (
+    f"Severity bands (by model confidence): "
+    f"{int(SEVERITY_THRESHOLDS['mild'] * 100)}-{int(SEVERITY_THRESHOLDS['moderate'] * 100)}% Mild · "
+    f"{int(SEVERITY_THRESHOLDS['moderate'] * 100)}-{int(SEVERITY_THRESHOLDS['significant'] * 100)}% Moderate · "
+    f"{int(SEVERITY_THRESHOLDS['significant'] * 100)}-{int(SEVERITY_THRESHOLDS['severe'] * 100)}% Significant · "
+    f"{int(SEVERITY_THRESHOLDS['severe'] * 100)}%+ Severe"
+)
+
 OUTPUT_LOG_PATH = PROJECT_ROOT / "outputs" / "inference_log.jsonl"
 OUTPUT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -142,19 +162,19 @@ grad_cam = GradCAM(inference_model, target_layer)
 def compute_severity_level(prob: float) -> str:
     """
     Computes a 5-tier clinical confidence heuristic from pneumonia probability alone:
-      < 0.50     -> "Not detected"
-      0.50 - 0.65 -> "Mild"
-      0.65 - 0.80 -> "Moderate"
-      0.80 - 0.90 -> "Significant"
-      >= 0.90    -> "Severe"
+      < 0.70      -> "Not Detected"
+      0.70 - 0.79 -> "Mild"
+      0.79 - 0.88 -> "Moderate"
+      0.88 - 0.94 -> "Significant"
+      >= 0.94     -> "Severe"
     """
-    if prob < 0.50:
-        return "Not detected"
-    elif prob < 0.65:
+    if prob < SEVERITY_THRESHOLDS["mild"]:
+        return "Not Detected"
+    elif prob < SEVERITY_THRESHOLDS["moderate"]:
         return "Mild"
-    elif prob < 0.80:
+    elif prob < SEVERITY_THRESHOLDS["significant"]:
         return "Moderate"
-    elif prob < 0.90:
+    elif prob < SEVERITY_THRESHOLDS["severe"]:
         return "Significant"
     else:
         return "Severe"
@@ -293,6 +313,7 @@ async def serve_doctor_ui():
         )
     with open(ui_path, "r", encoding="utf-8") as f:
         html_content = f.read()
+    html_content = html_content.replace("{{SEVERITY_LEGEND_TEXT}}", SEVERITY_LEGEND_TEXT)
     return HTMLResponse(content=html_content)
 
 
@@ -305,7 +326,8 @@ async def health():
         "device": str(device),
         "model_checkpoint": checkpoint_filename,
         "checkpoint_path": str(loaded_checkpoint_path),
-        "threshold": 0.5,
+        "threshold": DECISION_THRESHOLD,
+        "severity_legend": SEVERITY_LEGEND_TEXT,
         "disclaimer": DISCLAIMER_TEXT,
     }
 
@@ -335,10 +357,12 @@ async def predict(file: UploadFile = File(...)):
         logits = inference_model(input_tensor)
         prob = float(torch.sigmoid(logits).item())
 
-    # Decision logic (standard 0.5 decision threshold)
-    threshold = 0.5
+    # Decision logic (0.70 decision threshold)
+    threshold = DECISION_THRESHOLD
     prediction_label = "pneumonia_suspected" if prob >= threshold else "normal"
-    severity_level = compute_severity_level(prob)
+    # Severity is only computed/shown when pneumonia is suspected (prob >= 0.70).
+    # Normal verdicts can never simultaneously show a severity label.
+    severity_level = compute_severity_level(prob) if prediction_label == "pneumonia_suspected" else "Not Detected"
 
     # In-memory Grad-CAM generation targeting model.layer4[1].conv2 (Step 7)
     cam = grad_cam.generate_heatmap(input_tensor)
@@ -362,6 +386,7 @@ async def predict(file: UploadFile = File(...)):
         "prediction": prediction_label,
         "severity_level": severity_level,
         "severity_disclaimer": SEVERITY_DISCLAIMER,
+        "severity_legend": SEVERITY_LEGEND_TEXT,
         "gradcam_overlay_base64": overlay_base64,
         "gradcam_base64": overlay_base64,
         "original_image_base64": orig_base64,

@@ -45,7 +45,7 @@ def test_health_endpoint():
     data = resp.json()
     assert data["status"] == "healthy"
     assert data["port"] == 8090
-    assert data["threshold"] == 0.5
+    assert data["threshold"] == 0.70
     assert data["disclaimer"] == DISCLAIMER_TEXT
     assert data["severity_legend"] == SEVERITY_LEGEND_TEXT
     assert "model_checkpoint" in data
@@ -60,7 +60,7 @@ def test_doctor_ui_served():
     assert DISCLAIMER_TEXT in resp.text
     assert "Permanent Regulatory Notice" in resp.text
     assert SEVERITY_LEGEND_TEXT in resp.text
-    assert "Primary screening threshold (fixed, optimized for sensitivity)" in resp.text
+    assert "Fixed binary classification threshold" in resp.text
 
 
 def create_sample_png_bytes(width=256, height=256) -> bytes:
@@ -117,9 +117,9 @@ def test_predict_png_image():
     assert isinstance(data["pneumonia_probability"], float)
     assert 0.0 <= data["pneumonia_probability"] <= 1.0
 
-    assert data["threshold"] == 0.5
+    assert data["threshold"] == 0.70
     assert data["prediction"] in ["pneumonia_suspected", "normal"]
-    if data["pneumonia_probability"] >= 0.5:
+    if data["pneumonia_probability"] >= 0.70:
         assert data["prediction"] == "pneumonia_suspected"
     else:
         assert data["prediction"] == "normal"
@@ -143,7 +143,7 @@ def test_predict_gradcam_and_severity_integration():
     # Severity field present and valid
     assert "severity_level" in data
     assert data["severity_level"] in [
-        "Not detected", "Mild", "Moderate", "Significant", "Severe"
+        "Not Detected", "Mild", "Moderate", "Significant", "Severe"
     ]
     assert "severity_disclaimer" in data
     assert len(data["severity_disclaimer"]) > 0
@@ -168,8 +168,12 @@ def test_predict_dicom_image():
     assert resp.status_code == 200
     data = resp.json()
     assert "pneumonia_probability" in data
-    assert data["threshold"] == 0.5
+    assert data["threshold"] == 0.70
     assert data["prediction"] in ["pneumonia_suspected", "normal"]
+    if data["pneumonia_probability"] >= 0.70:
+        assert data["prediction"] == "pneumonia_suspected"
+    else:
+        assert data["prediction"] == "normal"
     assert data["disclaimer"] == DISCLAIMER_TEXT
 
 
@@ -221,23 +225,92 @@ from app.inference_server import compute_severity_level
 
 
 def test_severity_ladder_heuristic():
-    # Below mild threshold
-    assert compute_severity_level(0.49) == "Not detected"
-    assert compute_severity_level(0.0) == "Not detected"
+    # Below mild threshold (< 0.70)
+    assert compute_severity_level(0.0) == "Not Detected"
+    assert compute_severity_level(0.49) == "Not Detected"
+    assert compute_severity_level(0.50) == "Not Detected"
+    assert compute_severity_level(0.68) == "Not Detected"
+    assert compute_severity_level(0.69) == "Not Detected"
 
-    # Mild band: [0.50, 0.65)
-    assert compute_severity_level(0.50) == "Mild"
-    assert compute_severity_level(0.64) == "Mild"
+    # Mild band: [0.70, 0.79)
+    assert compute_severity_level(0.70) == "Mild"
+    assert compute_severity_level(0.75) == "Mild"
+    assert compute_severity_level(0.789) == "Mild"
 
-    # Moderate band: [0.65, 0.80)
-    assert compute_severity_level(0.65) == "Moderate"
+    # Moderate band: [0.79, 0.88)
     assert compute_severity_level(0.79) == "Moderate"
+    assert compute_severity_level(0.85) == "Moderate"
+    assert compute_severity_level(0.879) == "Moderate"
 
-    # Significant band: [0.80, 0.90)
-    assert compute_severity_level(0.80) == "Significant"
-    assert compute_severity_level(0.89) == "Significant"
+    # Significant band: [0.88, 0.94)
+    assert compute_severity_level(0.88) == "Significant"
+    assert compute_severity_level(0.90) == "Significant"
+    assert compute_severity_level(0.939) == "Significant"
 
-    # Severe band: [0.90, 1.0]
-    assert compute_severity_level(0.90) == "Severe"
-    assert compute_severity_level(0.99) == "Severe"
+    # Severe band: [0.94, 1.0]
+    assert compute_severity_level(0.94) == "Severe"
+    assert compute_severity_level(0.97) == "Severe"
     assert compute_severity_level(1.0) == "Severe"
+
+
+def test_sub_threshold_normal_verdict_and_not_detected_severity(monkeypatch):
+    """
+    Asserts that a probability just below 0.70 (e.g. 0.68) yields:
+      verdict = 'normal' AND severity = 'Not Detected'
+    Guarantees no contradictory state (normal verdict cannot show a severity label).
+    """
+    # 1. Direct heuristic check
+    assert compute_severity_level(0.68) == "Not Detected"
+
+    # 2. End-to-end /predict endpoint mock check forcing model output to p=0.68
+    # Logit for 0.68: log(0.68 / (1 - 0.68)) = log(0.68 / 0.32) = 0.75377180257
+    import torch
+    target_logit = torch.tensor([[0.75377180257]])
+
+    from app.inference_server import inference_model, grad_cam
+    monkeypatch.setattr(inference_model, "forward", lambda x: target_logit)
+    monkeypatch.setattr(grad_cam, "generate_heatmap", lambda x: np.zeros((224, 224), dtype=np.float32))
+
+    png_bytes = create_sample_png_bytes(64, 64)
+    resp = client.post(
+        "/predict",
+        files={"file": ("borderline_scan.png", png_bytes, "image/png")}
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+
+    assert data["pneumonia_probability"] == 0.68
+    assert data["threshold"] == 0.70
+    assert data["prediction"] == "normal"
+    assert data["severity_level"] == "Not Detected"
+
+
+@pytest.mark.parametrize("prob,expected_severity", [
+    (0.75, "Mild"),
+    (0.85, "Moderate"),
+    (0.90, "Significant"),
+    (0.97, "Severe"),
+])
+def test_predict_severity_bands_integration(monkeypatch, prob, expected_severity):
+    """Asserts that 0.75, 0.85, 0.90, 0.97 yield Mild, Moderate, Significant, Severe respectively in /predict."""
+    import torch
+    import math
+    logit_val = math.log(prob / (1.0 - prob))
+    target_logit = torch.tensor([[logit_val]])
+
+    from app.inference_server import inference_model, grad_cam
+    monkeypatch.setattr(inference_model, "forward", lambda x: target_logit)
+    monkeypatch.setattr(grad_cam, "generate_heatmap", lambda x: np.zeros((224, 224), dtype=np.float32))
+
+    png_bytes = create_sample_png_bytes(64, 64)
+    resp = client.post(
+        "/predict",
+        files={"file": (f"test_{prob}_scan.png", png_bytes, "image/png")}
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+
+    assert data["pneumonia_probability"] == prob
+    assert data["threshold"] == 0.70
+    assert data["prediction"] == "pneumonia_suspected"
+    assert data["severity_level"] == expected_severity

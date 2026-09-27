@@ -265,6 +265,29 @@
         }
 
         /* Severity Badge & Disclaimer Tooltip */
+        .badges-legend-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.45rem;
+        }
+
+        .severity-legend {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            text-align: right;
+            user-select: text;
+        }
+
+        .metric-sublabel {
+            font-size: 0.74rem;
+            color: #93c5fd;
+            font-weight: 500;
+            margin-bottom: 0.35rem;
+            line-height: 1.35;
+        }
+
         .severity-badge-container {
             position: relative;
             display: inline-flex;
@@ -441,6 +464,13 @@
             .header-badges {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+            .badges-legend-container {
+                align-items: flex-start;
+                width: 100%;
+            }
+            .severity-legend {
+                text-align: left;
             }
             .severity-popover {
                 right: auto;
@@ -661,21 +691,24 @@
         <section class="card" id="results-panel" aria-live="polite">
             <div class="result-header">
                 <h2>Analysis Assessment</h2>
-                <div class="header-badges">
-                    <div class="status-badge" id="status-badge">NORMAL</div>
-                    <div class="severity-badge-container" id="severity-container">
-                        <span class="severity-label">Severity:</span>
-                        <div class="severity-badge sev-not-detected" id="severity-badge" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false" title="Click or hover for severity disclaimer">
-                            <span id="severity-text">Not detected</span>
-                            <svg class="info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
-                        </div>
-                        <div class="severity-popover" id="severity-popover" role="tooltip">
-                            <div class="popover-title">Severity Heuristic Notice</div>
-                            <div class="popover-body" id="severity-disclaimer-text">
-                                Severity is a confidence-based heuristic derived from model probability. The training dataset (RSNA) has no clinician-assigned severity labels, so this is not a validated severity score.
+                <div class="badges-legend-container">
+                    <div class="header-badges">
+                        <div class="status-badge" id="status-badge">NORMAL</div>
+                        <div class="severity-badge-container" id="severity-container">
+                            <span class="severity-label">Severity:</span>
+                            <div class="severity-badge sev-not-detected" id="severity-badge" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false" title="Click or hover for severity disclaimer">
+                                <span id="severity-text">Not Detected</span>
+                                <svg class="info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                            </div>
+                            <div class="severity-popover" id="severity-popover" role="tooltip">
+                                <div class="popover-title">Severity Heuristic Notice</div>
+                                <div class="popover-body" id="severity-disclaimer-text">
+                                    Severity is a confidence-based heuristic derived from model probability. The training dataset (RSNA) has no clinician-assigned severity labels, so this is not a validated severity score.
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <div class="severity-legend" id="severity-legend">{{SEVERITY_LEGEND_TEXT}}</div>
                 </div>
             </div>
 
@@ -689,8 +722,9 @@
                 </div>
 
                 <div class="metric-box">
+                    <div class="metric-sublabel">Fixed binary classification threshold</div>
                     <div class="metric-label">Operating Decision Threshold</div>
-                    <div class="metric-value" id="metric-thresh">0.5000</div>
+                    <div class="metric-value" id="metric-thresh">0.7000</div>
                     <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.6rem;">Fixed binary classification threshold</div>
                 </div>
             </div>
@@ -751,6 +785,7 @@
         const severityText = document.getElementById('severity-text');
         const severityPopover = document.getElementById('severity-popover');
         const severityDisclaimerText = document.getElementById('severity-disclaimer-text');
+        const severityLegend = document.getElementById('severity-legend');
         const origImage = document.getElementById('orig-image');
         const gradcamImage = document.getElementById('gradcam-image');
 
@@ -760,6 +795,18 @@
         const displayCheckpoint = document.getElementById('display-checkpoint');
 
         let selectedFile = null;
+
+        // Ensure severity legend is populated if static HTML is loaded directly without server template
+        if (severityLegend && severityLegend.textContent.includes('{{SEVERITY_LEGEND_TEXT}}')) {
+            fetch('/health')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.severity_legend) severityLegend.textContent = data.severity_legend;
+                })
+                .catch(() => {
+                    severityLegend.textContent = "Severity bands (by model confidence): 70-79% Mild · 79-88% Moderate · 88-94% Significant · 94%+ Severe";
+                });
+        }
 
         // Trigger file browser on click
         dropzone.addEventListener('click', () => fileInput.click());
@@ -901,13 +948,17 @@
             }
 
             // Severity Level Badge (color intensity increasing with severity)
-            const severityLevel = data.severity_level || 'Not detected';
+            const severityLevel = data.severity_level || 'Not Detected';
             severityText.textContent = severityLevel;
             const sevClass = severityLevel.toLowerCase().replace(/\s+/g, '-');
             severityBadge.className = `severity-badge sev-${sevClass}`;
 
             if (data.severity_disclaimer) {
                 severityDisclaimerText.textContent = data.severity_disclaimer;
+            }
+
+            if (data.severity_legend && severityLegend) {
+                severityLegend.textContent = data.severity_legend;
             }
 
             // Side-by-Side Images (Original and Grad-CAM)
